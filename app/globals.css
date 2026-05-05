@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+/* =====================================================================
+   Design tokens — Sifriya
+   Source de verite : CLAUDE.md section 7.
+   Ne pas hardcoder de couleurs hex dans les composants.
+   ===================================================================== */
+
+@theme {
+  --color-paper: #f5f1e8;
+  --color-paper-2: #ede7d8;
+  --color-paper-3: #e3dcc8;
+  --color-ink: #1f1b13;
+  --color-ink-2: #3a342a;
+  --color-ink-3: #6b6354;
+  --color-ink-4: #9a9180;
+  --color-rule: rgba(31, 27, 19, 0.12);
+  --color-rule-2: rgba(31, 27, 19, 0.06);
+  --color-accent: #8a6b1f;
+  --color-accent-ink: #faf7ef;
+  --color-accent-soft: #e8dcb8;
+  --color-ok: #4a6b3e;
+  --color-warn: #a86a1f;
+  --color-err: #8a3030;
+
+  --font-serif: var(--serif), Georgia, serif;
+  --font-sans: var(--sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: var(--mono), ui-monospace, SFMono-Regular, monospace;
+
+  --radius-pill: 9999px;
+  --radius-card: 6px;
+  --radius-cover: 3px;
+}
+
+:root {
+  --paper: #f5f1e8;
+  --paper-2: #ede7d8;
+  --paper-3: #e3dcc8;
+  --ink: #1f1b13;
+  --ink-2: #3a342a;
+  --ink-3: #6b6354;
+  --ink-4: #9a9180;
+  --rule: rgba(31, 27, 19, 0.12);
+  --rule-2: rgba(31, 27, 19, 0.06);
+  --accent: #8a6b1f;
+  --accent-ink: #faf7ef;
+  --accent-soft: #e8dcb8;
+  --ok: #4a6b3e;
+  --warn: #a86a1f;
+  --err: #8a3030;
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 1px 2px rgba(31, 27, 19, 0.06);
+  --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 6px 24px rgba(31, 27, 19, 0.10);
+}
+
+/* =====================================================================
+   Reset / base
+   ===================================================================== */
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Texte selectionne — ton accent doux */
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+/* Focus visible global */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Scrollbar discrete */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-4) transparent;
+}
+
+/* =====================================================================
+   Composants partages
+   ===================================================================== */
+
+/* Couverture de livre — pseudo bande de reliure */
+.cover {
+  position: relative;
+  background: #3d2f17;
+  border-radius: var(--radius-cover);
+  box-shadow:
+    0 1px 1px rgba(31, 27, 19, 0.15),
+    0 8px 18px rgba(31, 27, 19, 0.18);
+  overflow: hidden;
+}
+
+.cover::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Apparition douce */
+@keyframes sifriya-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: sifriya-fade-in 220ms ease-out;
+}
