@@ -1,7 +1,7 @@
 import Link from "next/link"
-import { Plus } from "lucide-react"
 import { SearchBar } from "@/components/layout/SearchBar"
 import { MobileMenuButton } from "@/components/layout/MobileMenuButton"
+import { AddBookButton } from "@/components/books/AddBookButton"
 
 export function TopBar() {
   return (
@@ -49,17 +49,3 @@ function BookGlyph() {
   )
 }
 
-function AddBookButton() {
-  return (
-    <button
-      type="button"
-      disabled
-      title="Bientot disponible"
-      aria-label="Ajouter un livre (bientot disponible)"
-      className="inline-flex h-9 cursor-not-allowed items-center gap-2 rounded-md bg-accent px-4 text-sm font-medium text-accent-ink opacity-40 shadow-[var(--shadow-1)]"
-    >
-      <Plus size={16} />
-      Ajouter un livre
-    </button>
-  )
-}
