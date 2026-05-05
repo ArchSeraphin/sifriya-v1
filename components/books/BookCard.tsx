@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Cover } from "@/components/ui/Cover"
-import { Badge } from "@/components/ui/Badge"
+import { FormatBadge, TypeBadge } from "@/components/books/Badges"
 import type { BookListed } from "@/lib/books"
 
 type BookCardProps = { book: BookListed }
@@ -19,15 +19,14 @@ export function BookCard({ book }: BookCardProps) {
         className="transition group-hover:translate-y-[-1px] group-hover:shadow-[var(--shadow-2)]"
       />
       <div>
-        <p className="line-clamp-2 font-serif text-[15px] leading-tight text-ink">{book.title}</p>
+        <p className="line-clamp-2 font-serif text-[13px] leading-tight text-ink">{book.title}</p>
         {book.author ? (
-          <p className="mt-1 line-clamp-1 text-[12px] text-ink-3">{book.author}</p>
+          <p className="mt-0.5 line-clamp-1 text-[11px] text-ink-3">{book.author}</p>
         ) : null}
-        {book.type === "PHYSICAL" ? (
-          <Badge tone="warn" className="mt-2">
-            Physique
-          </Badge>
-        ) : null}
+        <div className="mt-1.5 flex flex-wrap items-center gap-1">
+          {book.format ? <FormatBadge format={book.format} /> : null}
+          {book.type === "PHYSICAL" ? <TypeBadge type="PHYSICAL" /> : null}
+        </div>
       </div>
     </Link>
   )

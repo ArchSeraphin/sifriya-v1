@@ -42,14 +42,6 @@ export function Cover({ title, author, format, src, className }: CoverProps) {
           loading="lazy"
         />
       ) : null}
-      {format ? (
-        <span
-          className="absolute right-1.5 top-1.5 z-[2] font-mono text-[9px] uppercase tracking-wider opacity-70"
-          style={{ color: "rgba(255,255,255,0.85)" }}
-        >
-          {format}
-        </span>
-      ) : null}
       {!src ? (
         <div className="absolute inset-x-0 bottom-0 z-[2] p-3">
           <p

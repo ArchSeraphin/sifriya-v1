@@ -1,0 +1,37 @@
+import * as React from "react"
+import type { BookType, FileFormat } from "@prisma/client"
+import { cn } from "@/lib/cn"
+
+// Pills compactes pour la grille / les listes : meme metrique que Badge mais
+// hauteur reduite et code couleur dedie aux formats. La palette reste dans le
+// design system (paper / accent / warn).
+
+const PILL_BASE =
+  "inline-flex h-5 items-center rounded-full px-2 text-[10px] font-medium uppercase tracking-wider"
+
+const FORMAT_CLASSES: Record<FileFormat, string> = {
+  // EPUB → accent dore : format natif "ebook", chaud, clin d'oeil au livre.
+  EPUB: "bg-accent-soft text-[#5a4711]",
+  // PDF  → neutre : format documentaire plus universel.
+  PDF: "bg-paper-3 text-ink-2"
+}
+
+export function FormatBadge({ format, className }: { format: FileFormat; className?: string }) {
+  return (
+    <span className={cn(PILL_BASE, "font-mono", FORMAT_CLASSES[format], className)}>{format}</span>
+  )
+}
+
+const TYPE_CLASSES: Record<BookType, string> = {
+  DIGITAL: "bg-paper-2 text-ink-2",
+  PHYSICAL: "bg-[rgba(168,106,31,0.14)] text-[color:var(--warn)]"
+}
+
+const TYPE_LABEL: Record<BookType, string> = {
+  DIGITAL: "Numerique",
+  PHYSICAL: "Physique"
+}
+
+export function TypeBadge({ type, className }: { type: BookType; className?: string }) {
+  return <span className={cn(PILL_BASE, TYPE_CLASSES[type], className)}>{TYPE_LABEL[type]}</span>
+}
