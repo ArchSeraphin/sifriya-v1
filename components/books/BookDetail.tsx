@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowLeft, Download } from "lucide-react"
+import { ArrowLeft, Download, Pencil } from "lucide-react"
 import { Cover } from "@/components/ui/Cover"
 import { Badge } from "@/components/ui/Badge"
 import { Avatar } from "@/components/ui/Avatar"
@@ -23,7 +23,8 @@ type Props = {
 }
 
 export function BookDetail({ book, currentUser, activeLoan, myActiveRequest }: Props) {
-  const canDelete = currentUser.role === "ADMIN" || book.addedBy.id === currentUser.id
+  const canEdit = currentUser.role === "ADMIN" || book.addedBy.id === currentUser.id
+  const canDelete = canEdit
   const isOwner = book.owner?.id === currentUser.id
   const acceptedLoan = activeLoan?.status === "ACCEPTED" ? activeLoan : null
 
@@ -79,6 +80,15 @@ export function BookDetail({ book, currentUser, activeLoan, myActiveRequest }: P
                 ownerName={book.owner.name ?? book.owner.email.split("@")[0]!}
                 alreadyRequested={Boolean(myActiveRequest)}
               />
+            ) : null}
+            {canEdit ? (
+              <Link
+                href={`/bibliotheque/${book.id}/modifier`}
+                className="inline-flex h-9 items-center gap-2 rounded-md border border-[var(--rule)] bg-paper px-4 text-sm font-medium text-ink-2 shadow-[var(--shadow-1)] transition hover:bg-paper-2 hover:text-ink"
+              >
+                <Pencil size={16} />
+                Modifier
+              </Link>
             ) : null}
             {canDelete ? <DeleteBookButton id={book.id} title={book.title} /> : null}
           </div>
