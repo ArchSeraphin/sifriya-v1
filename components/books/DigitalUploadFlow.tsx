@@ -7,6 +7,8 @@ import type { BookMetadata } from "@/lib/metadata"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { formatBytes } from "@/lib/books"
+import { useMetadataSearch } from "@/lib/use-metadata-search"
+import { MetadataResultsList } from "@/components/books/MetadataResultsList"
 
 type Step = "select" | "uploading" | "match" | "form"
 
@@ -28,7 +30,7 @@ type FormState = {
   publisher: string
   language: string
   coverUrl: string
-  sourceApi: "google_books" | "open_library" | "manual" | ""
+  sourceApi: "google_books" | "open_library" | "bnf" | "manual" | ""
   externalId: string
 }
 
@@ -58,7 +60,6 @@ export function DigitalUploadFlow({ onClose, onCancel }: Props) {
   const [step, setStep] = React.useState<Step>("select")
   const [upload, setUpload] = React.useState<UploadResult | null>(null)
   const [progress, setProgress] = React.useState(0)
-  const [matches, setMatches] = React.useState<BookMetadata[]>([])
   const [form, setForm] = React.useState<FormState>(EMPTY_FORM)
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -77,11 +78,6 @@ export function DigitalUploadFlow({ onClose, onCancel }: Props) {
       const result = (await uploadWithProgress("/api/uploads", data, setProgress)) as UploadResult
       setUpload(result)
       setForm((f) => ({ ...f, title: result.suggestedQuery }))
-      const r = await fetch(
-        `/api/metadata?q=${encodeURIComponent(result.suggestedQuery)}&limit=5`
-      )
-      const body = (await r.json().catch(() => ({ results: [] }))) as { results: BookMetadata[] }
-      setMatches(body.results ?? [])
       setStep("match")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Echec de l'envoi.")
@@ -157,7 +153,7 @@ export function DigitalUploadFlow({ onClose, onCancel }: Props) {
     return (
       <MatchStep
         upload={upload}
-        matches={matches}
+        initialQuery={upload.suggestedQuery}
         onPick={onPickMatch}
         onSkip={onSkipMatch}
         onBack={() => setStep("select")}
@@ -268,62 +264,40 @@ function UploadingStep({ progress }: { progress: number }) {
 
 function MatchStep({
   upload,
-  matches,
+  initialQuery,
   onPick,
   onSkip,
   onBack
 }: {
   upload: UploadResult
-  matches: BookMetadata[]
+  initialQuery: string
   onPick: (m: BookMetadata) => void
   onSkip: () => void
   onBack: () => void
 }) {
+  const meta = useMetadataSearch()
+  // Recherche automatique a l'arrivee sur cette etape, basee sur le nom du fichier.
+  const triggered = React.useRef(false)
+  React.useEffect(() => {
+    if (triggered.current) return
+    triggered.current = true
+    if (initialQuery.trim().length >= 2) void meta.search(initialQuery)
+  }, [initialQuery, meta])
+
   return (
     <div className="space-y-4">
       <UploadSummary upload={upload} />
-      {matches.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[var(--rule)] bg-paper-2/40 px-4 py-6 text-center text-[13px] text-ink-3">
-          Aucune fiche trouvee. Continuez en saisie manuelle.
-        </div>
-      ) : (
-        <ul className="space-y-2">
-          {matches.map((m) => (
-            <li key={`${m.source}-${m.externalId}`}>
-              <button
-                type="button"
-                onClick={() => onPick(m)}
-                className="flex w-full items-start gap-3 rounded-xl border border-[var(--rule)] bg-paper p-3 text-left transition hover:border-ink-3 hover:bg-paper-2"
-              >
-                <div className="h-20 w-14 shrink-0 overflow-hidden rounded-sm bg-paper-3">
-                  {m.coverUrl ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={m.coverUrl}
-                      alt=""
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : null}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="line-clamp-2 font-serif text-[15px] text-ink">{m.title}</p>
-                  {m.author ? (
-                    <p className="mt-0.5 line-clamp-1 text-[13px] text-ink-2">{m.author}</p>
-                  ) : null}
-                  <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[12px] text-ink-3">
-                    {m.year ? <span>{m.year}</span> : null}
-                    {m.publisher ? <span className="truncate">{m.publisher}</span> : null}
-                    <span className="ml-auto font-mono text-[11px] uppercase tracking-widest text-ink-4">
-                      {m.source === "google_books" ? "Google" : "Open Library"}
-                    </span>
-                  </div>
-                </div>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <MetadataResultsList
+        results={meta.results}
+        hasMore={meta.hasMore}
+        loadingMore={meta.loadingMore}
+        searching={meta.searching}
+        onPick={onPick}
+        onLoadMore={meta.loadMore}
+      />
+      {meta.error ? (
+        <p className="text-[13px] text-[color:var(--err)]">{meta.error}</p>
+      ) : null}
       <div className="flex items-center justify-between pt-2">
         <Button variant="ghost" onClick={onBack}>
           <ArrowLeft size={14} />

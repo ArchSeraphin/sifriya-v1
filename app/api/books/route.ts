@@ -78,7 +78,7 @@ const Common = z.object({
   publisher: z.string().trim().max(200).optional().nullable(),
   language: z.string().trim().max(10).optional().nullable(),
   coverUrl: CoverUrl.optional().nullable(),
-  sourceApi: z.enum(["google_books", "open_library", "manual"]).optional().nullable(),
+  sourceApi: z.enum(["google_books", "open_library", "bnf", "manual"]).optional().nullable(),
   externalId: z.string().trim().max(200).optional().nullable()
 })
 

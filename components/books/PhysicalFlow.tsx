@@ -13,6 +13,8 @@ import {
 import type { BookMetadata } from "@/lib/metadata"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
+import { useMetadataSearch } from "@/lib/use-metadata-search"
+import { MetadataResultsList } from "@/components/books/MetadataResultsList"
 
 type Step = "mode" | "isbn" | "search" | "form"
 type Mode = "isbn" | "search" | "manual"
@@ -27,7 +29,7 @@ type FormState = {
   publisher: string
   language: string
   coverUrl: string
-  sourceApi: "google_books" | "open_library" | "manual" | ""
+  sourceApi: "google_books" | "open_library" | "bnf" | "manual" | ""
   externalId: string
 }
 
@@ -339,24 +341,12 @@ function IsbnStep({
 
 function SearchStep({ onPick, onBack }: { onPick: (m: BookMetadata) => void; onBack: () => void }) {
   const [q, setQ] = React.useState("")
-  const [pending, setPending] = React.useState(false)
-  const [results, setResults] = React.useState<BookMetadata[]>([])
-  const [searched, setSearched] = React.useState(false)
+  const meta = useMetadataSearch()
 
   const lookup = async (e: React.FormEvent) => {
     e.preventDefault()
     if (q.trim().length < 2) return
-    setPending(true)
-    setSearched(false)
-    const res = await fetch(`/api/metadata?q=${encodeURIComponent(q.trim())}&limit=5`)
-    setPending(false)
-    setSearched(true)
-    if (!res.ok) {
-      setResults([])
-      return
-    }
-    const body = (await res.json()) as { results: BookMetadata[] }
-    setResults(body.results)
+    await meta.search(q)
   }
 
   return (
@@ -366,42 +356,28 @@ function SearchStep({ onPick, onBack }: { onPick: (m: BookMetadata) => void; onB
           <span className="mb-1.5 block font-medium">Titre ou auteur</span>
           <Input value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
         </label>
-        <Button type="submit" variant="secondary" disabled={pending || q.trim().length < 2}>
+        <Button
+          type="submit"
+          variant="secondary"
+          disabled={meta.searching || q.trim().length < 2}
+        >
           <Search size={14} />
           Rechercher
         </Button>
       </form>
-      {searched && results.length === 0 ? (
-        <p className="text-[13px] text-ink-3">Aucune fiche trouvee. Affinez votre recherche.</p>
+
+      {meta.hasSearched ? (
+        <MetadataResultsList
+          results={meta.results}
+          hasMore={meta.hasMore}
+          loadingMore={meta.loadingMore}
+          searching={meta.searching}
+          onPick={onPick}
+          onLoadMore={meta.loadMore}
+        />
       ) : null}
-      {results.length > 0 ? (
-        <ul className="space-y-2">
-          {results.map((m) => (
-            <li key={`${m.source}-${m.externalId}`}>
-              <button
-                type="button"
-                onClick={() => onPick(m)}
-                className="flex w-full items-start gap-3 rounded-xl border border-[var(--rule)] bg-paper p-3 text-left transition hover:border-ink-3 hover:bg-paper-2"
-              >
-                <div className="h-20 w-14 shrink-0 overflow-hidden rounded-sm bg-paper-3">
-                  {m.coverUrl ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={m.coverUrl} alt="" className="h-full w-full object-cover" />
-                  ) : null}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="line-clamp-2 font-serif text-[15px] text-ink">{m.title}</p>
-                  {m.author ? <p className="line-clamp-1 text-[13px] text-ink-2">{m.author}</p> : null}
-                  <p className="mt-1 text-[12px] text-ink-3">
-                    {m.year ? `${m.year} · ` : ""}
-                    {m.publisher ?? ""}
-                  </p>
-                </div>
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      {meta.error ? <p className="text-[13px] text-[color:var(--err)]">{meta.error}</p> : null}
+
       <div className="flex justify-start pt-2">
         <Button variant="ghost" onClick={onBack}>
           <ArrowLeft size={14} />
