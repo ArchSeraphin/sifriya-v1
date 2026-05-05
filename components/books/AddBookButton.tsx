@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/Button"
-import { UploadFlow } from "@/components/books/UploadFlow"
+import { AddBookFlow } from "@/components/books/AddBookFlow"
 
 type Props = { variant?: "primary" | "secondary"; size?: "sm" | "md" | "lg" }
 
@@ -15,7 +15,7 @@ export function AddBookButton({ variant = "primary", size = "md" }: Props) {
         <Plus size={16} />
         Ajouter un livre
       </Button>
-      <UploadFlow open={open} onClose={() => setOpen(false)} />
+      <AddBookFlow open={open} onClose={() => setOpen(false)} />
     </>
   )
 }

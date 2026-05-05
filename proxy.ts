@@ -25,8 +25,10 @@ export default withAuth(
 )
 
 export const config = {
-  // Tout est protege sauf : auth API, login/verify, healthcheck, assets statiques.
+  // On protege les pages applicatives (et /admin). Les routes API se chargent
+  // elles-memes de leur 401/403 — un middleware qui redirige vers /login pour
+  // une requete fetch produit un 307 illisible cote client.
   matcher: [
-    "/((?!api/auth|api/health|login|verify|_next/static|_next/image|favicon.ico|logo.svg).*)"
+    "/((?!api|login|verify|_next/static|_next/image|favicon.ico|logo.svg).*)"
   ]
 }

@@ -58,10 +58,17 @@ export async function GET(req: Request) {
 // POST /api/books — cree un livre numerique a partir d'un upload pending
 // =====================================================================
 
-const CreateBody = z.object({
-  uploadId: z.string().min(8).max(64),
-  format: z.enum(["EPUB", "PDF"]),
-  fileSize: z.number().int().min(1),
+// On accepte une URL externe (https://) ou un chemin servi par notre API
+// (/api/covers/...). Tout le reste est rejete.
+const CoverUrl = z
+  .string()
+  .trim()
+  .refine(
+    (s) => s.startsWith("/api/covers/") || /^https?:\/\//.test(s),
+    { message: "URL de couverture invalide." }
+  )
+
+const Common = z.object({
   title: z.string().trim().min(1).max(500),
   author: z.string().trim().max(300).optional().nullable(),
   isbn: z.string().trim().max(20).optional().nullable(),
@@ -70,10 +77,23 @@ const CreateBody = z.object({
   year: z.number().int().min(0).max(2200).optional().nullable(),
   publisher: z.string().trim().max(200).optional().nullable(),
   language: z.string().trim().max(10).optional().nullable(),
-  coverUrl: z.string().trim().url().optional().nullable(),
+  coverUrl: CoverUrl.optional().nullable(),
   sourceApi: z.enum(["google_books", "open_library", "manual"]).optional().nullable(),
   externalId: z.string().trim().max(200).optional().nullable()
 })
+
+const DigitalBody = Common.extend({
+  type: z.literal("DIGITAL").optional().default("DIGITAL"),
+  uploadId: z.string().min(8).max(64),
+  format: z.enum(["EPUB", "PDF"]),
+  fileSize: z.number().int().min(1)
+})
+
+const PhysicalBody = Common.extend({
+  type: z.literal("PHYSICAL")
+})
+
+const CreateBody = z.discriminatedUnion("type", [DigitalBody, PhysicalBody])
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
@@ -95,10 +115,35 @@ export async function POST(req: Request) {
   }
   const data = parsed.data
 
-  // Cree d'abord le Book pour avoir l'ID, puis on commite le fichier vers
-  // books/${id}.${ext}. Si le commit echoue, on rollback.
-  const ext = data.format.toLowerCase() as "epub" | "pdf"
+  if (data.type === "PHYSICAL") {
+    const book = await db.book.create({
+      data: {
+        title: data.title,
+        author: data.author ?? null,
+        isbn: data.isbn ?? null,
+        description: data.description ?? null,
+        genre: data.genre ?? null,
+        year: data.year ?? null,
+        publisher: data.publisher ?? null,
+        language: data.language ?? "fr",
+        coverUrl: data.coverUrl ?? null,
+        type: "PHYSICAL",
+        format: null,
+        filePath: null,
+        fileSize: null,
+        sourceApi: data.sourceApi ?? null,
+        externalId: data.externalId ?? null,
+        addedById: session.user.id,
+        ownerId: session.user.id
+      },
+      select: PUBLIC_BOOK_SELECT
+    })
+    return NextResponse.json({ book }, { status: 201 })
+  }
 
+  // DIGITAL : Cree d'abord le Book pour avoir l'ID, puis on commite le fichier
+  // vers books/${id}.${ext}. Rollback si echec.
+  const ext = data.format.toLowerCase() as "epub" | "pdf"
   let bookId: string | null = null
   try {
     const book = await db.book.create({

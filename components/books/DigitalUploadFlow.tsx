@@ -6,10 +6,7 @@ import { ArrowLeft, FileUp, FileText, Check, Loader2 } from "lucide-react"
 import type { BookMetadata } from "@/lib/metadata"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
-import { Modal } from "@/components/ui/Modal"
 import { formatBytes } from "@/lib/books"
-
-type UploadFlowProps = { open: boolean; onClose: () => void }
 
 type Step = "select" | "uploading" | "match" | "form"
 
@@ -51,7 +48,12 @@ const EMPTY_FORM: FormState = {
 
 const MAX_BYTES = 50 * 1024 * 1024
 
-export function UploadFlow({ open, onClose }: UploadFlowProps) {
+type Props = {
+  onClose: () => void
+  onCancel: () => void
+}
+
+export function DigitalUploadFlow({ onClose, onCancel }: Props) {
   const router = useRouter()
   const [step, setStep] = React.useState<Step>("select")
   const [upload, setUpload] = React.useState<UploadResult | null>(null)
@@ -60,25 +62,6 @@ export function UploadFlow({ open, onClose }: UploadFlowProps) {
   const [form, setForm] = React.useState<FormState>(EMPTY_FORM)
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
-
-  const reset = React.useCallback(() => {
-    setStep("select")
-    setUpload(null)
-    setProgress(0)
-    setMatches([])
-    setForm(EMPTY_FORM)
-    setPending(false)
-    setError(null)
-  }, [])
-
-  React.useEffect(() => {
-    if (!open) reset()
-  }, [open, reset])
-
-  const close = () => {
-    if (pending) return
-    onClose()
-  }
 
   const startUpload = async (file: File) => {
     setError(null)
@@ -90,18 +73,12 @@ export function UploadFlow({ open, onClose }: UploadFlowProps) {
     setProgress(0)
     const data = new FormData()
     data.append("file", file)
-
     try {
-      const result = await uploadWithProgress("/api/uploads", data, setProgress)
-      const upload = result as UploadResult
-      setUpload(upload)
-      setForm((f) => ({
-        ...f,
-        title: upload.suggestedQuery
-      }))
-      // Fetch suggestions
+      const result = (await uploadWithProgress("/api/uploads", data, setProgress)) as UploadResult
+      setUpload(result)
+      setForm((f) => ({ ...f, title: result.suggestedQuery }))
       const r = await fetch(
-        `/api/metadata?q=${encodeURIComponent(upload.suggestedQuery)}&limit=5`
+        `/api/metadata?q=${encodeURIComponent(result.suggestedQuery)}&limit=5`
       )
       const body = (await r.json().catch(() => ({ results: [] }))) as { results: BookMetadata[] }
       setMatches(body.results ?? [])
@@ -143,26 +120,26 @@ export function UploadFlow({ open, onClose }: UploadFlowProps) {
     }
     setPending(true)
     setError(null)
-    const payload = {
-      uploadId: upload.uploadId,
-      format: upload.format,
-      fileSize: upload.size,
-      title: form.title.trim(),
-      author: form.author.trim() || null,
-      isbn: form.isbn.trim() || null,
-      description: form.description.trim() || null,
-      genre: form.genre.trim() || null,
-      year: form.year ? Number(form.year) : null,
-      publisher: form.publisher.trim() || null,
-      language: form.language.trim() || null,
-      coverUrl: form.coverUrl.trim() || null,
-      sourceApi: form.sourceApi || "manual",
-      externalId: form.externalId.trim() || null
-    }
     const res = await fetch("/api/books", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        type: "DIGITAL",
+        uploadId: upload.uploadId,
+        format: upload.format,
+        fileSize: upload.size,
+        title: form.title.trim(),
+        author: form.author.trim() || null,
+        isbn: form.isbn.trim() || null,
+        description: form.description.trim() || null,
+        genre: form.genre.trim() || null,
+        year: form.year ? Number(form.year) : null,
+        publisher: form.publisher.trim() || null,
+        language: form.language.trim() || null,
+        coverUrl: form.coverUrl.trim() || null,
+        sourceApi: form.sourceApi || "manual",
+        externalId: form.externalId.trim() || null
+      })
     })
     setPending(false)
     if (!res.ok) {
@@ -174,52 +151,44 @@ export function UploadFlow({ open, onClose }: UploadFlowProps) {
     router.refresh()
   }
 
-  const title =
-    step === "select" || step === "uploading"
-      ? "Ajouter un livre"
-      : step === "match"
-        ? "Choisir une concordance"
-        : "Confirmer la fiche"
-
-  return (
-    <Modal open={open} onClose={close} title={title} size="lg">
-      {step === "select" ? (
-        <SelectStep onFile={startUpload} error={error} />
-      ) : null}
-      {step === "uploading" ? <UploadingStep progress={progress} /> : null}
-      {step === "match" && upload ? (
-        <MatchStep
-          upload={upload}
-          matches={matches}
-          onPick={onPickMatch}
-          onSkip={onSkipMatch}
-          onBack={() => setStep("select")}
-        />
-      ) : null}
-      {step === "form" && upload ? (
-        <FormStep
-          form={form}
-          setForm={setForm}
-          upload={upload}
-          pending={pending}
-          error={error}
-          onBack={() => setStep("match")}
-          onSubmit={onSubmit}
-        />
-      ) : null}
-    </Modal>
-  )
+  if (step === "select") return <SelectStep onFile={startUpload} onBack={onCancel} error={error} />
+  if (step === "uploading") return <UploadingStep progress={progress} />
+  if (step === "match" && upload) {
+    return (
+      <MatchStep
+        upload={upload}
+        matches={matches}
+        onPick={onPickMatch}
+        onSkip={onSkipMatch}
+        onBack={() => setStep("select")}
+      />
+    )
+  }
+  if (step === "form" && upload) {
+    return (
+      <FormStep
+        form={form}
+        setForm={setForm}
+        upload={upload}
+        pending={pending}
+        error={error}
+        onBack={() => setStep("match")}
+        onSubmit={onSubmit}
+      />
+    )
+  }
+  return null
 }
 
-// ---------------------------------------------------------------------
-// Step 1 : Drop file
-// ---------------------------------------------------------------------
+// =====================================================================
 
 function SelectStep({
   onFile,
+  onBack,
   error
 }: {
   onFile: (file: File) => void
+  onBack: () => void
   error: string | null
 }) {
   const inputRef = React.useRef<HTMLInputElement>(null)
@@ -235,8 +204,7 @@ function SelectStep({
   return (
     <div className="space-y-4">
       <p className="text-[13px] text-ink-3">
-        Deposez un fichier <strong>EPUB</strong> ou <strong>PDF</strong> (max 50 Mo). Nous
-        chercherons automatiquement sa fiche dans Google Books.
+        Deposez un fichier <strong>EPUB</strong> ou <strong>PDF</strong> (max 50 Mo).
       </p>
       <div
         onDrop={handleDrop}
@@ -272,13 +240,15 @@ function SelectStep({
         />
       </div>
       {error ? <p className="text-[13px] text-[color:var(--err)]">{error}</p> : null}
+      <div className="flex justify-start">
+        <Button variant="ghost" onClick={onBack}>
+          <ArrowLeft size={14} />
+          Retour
+        </Button>
+      </div>
     </div>
   )
 }
-
-// ---------------------------------------------------------------------
-// Step 2 : Uploading (with progress)
-// ---------------------------------------------------------------------
 
 function UploadingStep({ progress }: { progress: number }) {
   const pct = Math.min(100, Math.round(progress * 100))
@@ -296,10 +266,6 @@ function UploadingStep({ progress }: { progress: number }) {
   )
 }
 
-// ---------------------------------------------------------------------
-// Step 3 : Match (pick a metadata suggestion)
-// ---------------------------------------------------------------------
-
 function MatchStep({
   upload,
   matches,
@@ -316,7 +282,6 @@ function MatchStep({
   return (
     <div className="space-y-4">
       <UploadSummary upload={upload} />
-
       {matches.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[var(--rule)] bg-paper-2/40 px-4 py-6 text-center text-[13px] text-ink-3">
           Aucune fiche trouvee. Continuez en saisie manuelle.
@@ -332,7 +297,7 @@ function MatchStep({
               >
                 <div className="h-20 w-14 shrink-0 overflow-hidden rounded-sm bg-paper-3">
                   {m.coverUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={m.coverUrl}
                       alt=""
@@ -359,7 +324,6 @@ function MatchStep({
           ))}
         </ul>
       )}
-
       <div className="flex items-center justify-between pt-2">
         <Button variant="ghost" onClick={onBack}>
           <ArrowLeft size={14} />
@@ -372,10 +336,6 @@ function MatchStep({
     </div>
   )
 }
-
-// ---------------------------------------------------------------------
-// Step 4 : Form (confirm + save)
-// ---------------------------------------------------------------------
 
 function FormStep({
   form,
@@ -394,31 +354,23 @@ function FormStep({
   onBack: () => void
   onSubmit: (e: React.FormEvent) => void
 }) {
-  const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm((f) => ({ ...f, [k]: e.target.value }))
-  }
+  const set = (k: keyof FormState) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => setForm((f) => ({ ...f, [k]: e.target.value }))
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <UploadSummary upload={upload} />
-
-      <Field label="Titre *" required>
+      <Field label="Titre *">
         <Input value={form.title} onChange={set("title")} required maxLength={500} />
       </Field>
-
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Auteur">
           <Input value={form.author} onChange={set("author")} maxLength={300} />
         </Field>
         <Field label="ISBN">
-          <Input
-            value={form.isbn}
-            onChange={set("isbn")}
-            maxLength={20}
-            inputMode="numeric"
-          />
+          <Input value={form.isbn} onChange={set("isbn")} maxLength={20} inputMode="numeric" />
         </Field>
       </div>
-
       <Field label="Description">
         <textarea
           value={form.description}
@@ -428,28 +380,20 @@ function FormStep({
           className="w-full rounded-md border border-[var(--rule)] bg-paper px-3 py-2 text-sm text-ink shadow-[var(--shadow-1)] focus:border-ink-3 focus:outline-none focus:ring-[3px] focus:ring-[rgba(31,27,19,0.05)]"
         />
       </Field>
-
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="Genre">
           <Input value={form.genre} onChange={set("genre")} maxLength={120} />
         </Field>
         <Field label="Annee">
-          <Input
-            value={form.year}
-            onChange={set("year")}
-            inputMode="numeric"
-            maxLength={4}
-          />
+          <Input value={form.year} onChange={set("year")} inputMode="numeric" maxLength={4} />
         </Field>
         <Field label="Langue">
           <Input value={form.language} onChange={set("language")} maxLength={10} />
         </Field>
       </div>
-
       <Field label="Editeur">
         <Input value={form.publisher} onChange={set("publisher")} maxLength={200} />
       </Field>
-
       {form.coverUrl ? (
         <div className="flex items-center gap-3 rounded-md border border-[var(--rule-2)] bg-paper-2/40 p-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -465,9 +409,7 @@ function FormStep({
           </p>
         </div>
       ) : null}
-
       {error ? <p className="text-[13px] text-[color:var(--err)]">{error}</p> : null}
-
       <div className="flex items-center justify-between pt-2">
         <Button variant="ghost" onClick={onBack} disabled={pending}>
           <ArrowLeft size={14} />
@@ -482,15 +424,7 @@ function FormStep({
   )
 }
 
-function Field({
-  label,
-  children,
-  required = false
-}: {
-  label: string
-  children: React.ReactNode
-  required?: boolean
-}) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block text-[13px] text-ink-2">
       <span className="mb-1 block font-medium">{label}</span>
@@ -514,10 +448,6 @@ function UploadSummary({ upload }: { upload: UploadResult }) {
     </div>
   )
 }
-
-// ---------------------------------------------------------------------
-// XHR-based upload to track progress
-// ---------------------------------------------------------------------
 
 function uploadWithProgress(
   url: string,

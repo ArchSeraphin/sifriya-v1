@@ -1,20 +1,31 @@
 import Link from "next/link"
-import { ArrowLeft, Download, HandHelping } from "lucide-react"
+import { ArrowLeft, Download } from "lucide-react"
 import { Cover } from "@/components/ui/Cover"
 import { Badge } from "@/components/ui/Badge"
 import { Avatar } from "@/components/ui/Avatar"
 import { formatBytes, type BookDetailDTO } from "@/lib/books"
 import { DeleteBookButton } from "@/components/books/DeleteBookButton"
+import { LoanRequestButton } from "@/components/books/LoanRequestButton"
 
 const dateFmt = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" })
+
+export type ActiveLoanLite = {
+  id: string
+  status: "PENDING" | "ACCEPTED"
+  requester: { id: string; name: string | null; email: string; avatarColor: string }
+}
 
 type Props = {
   book: BookDetailDTO
   currentUser: { id: string; role: "ADMIN" | "USER" }
+  activeLoan: ActiveLoanLite | null
+  myActiveRequest: { id: string; status: "PENDING" | "ACCEPTED" } | null
 }
 
-export function BookDetail({ book, currentUser }: Props) {
+export function BookDetail({ book, currentUser, activeLoan, myActiveRequest }: Props) {
   const canDelete = currentUser.role === "ADMIN" || book.addedBy.id === currentUser.id
+  const isOwner = book.owner?.id === currentUser.id
+  const acceptedLoan = activeLoan?.status === "ACCEPTED" ? activeLoan : null
 
   return (
     <article className="mx-auto max-w-4xl">
@@ -41,6 +52,13 @@ export function BookDetail({ book, currentUser }: Props) {
                 {book.format} · {formatBytes(book.fileSize)}
               </span>
             ) : null}
+            {book.type === "PHYSICAL" ? (
+              acceptedLoan ? (
+                <Badge tone="warn">En cours de pret</Badge>
+              ) : (
+                <Badge tone="ok">Disponible</Badge>
+              )
+            ) : null}
           </div>
           <h1 className="mt-3 font-serif text-3xl leading-tight text-ink">{book.title}</h1>
           {book.author ? <p className="mt-1 text-base text-ink-2">{book.author}</p> : null}
@@ -54,17 +72,14 @@ export function BookDetail({ book, currentUser }: Props) {
                 <Download size={16} />
                 Telecharger
               </a>
-            ) : (
-              <button
-                type="button"
-                disabled
-                title="Bientot disponible"
-                className="inline-flex h-9 cursor-not-allowed items-center gap-2 rounded-md border border-[var(--rule)] bg-paper px-4 text-sm font-medium text-ink-3 opacity-60 shadow-[var(--shadow-1)]"
-              >
-                <HandHelping size={16} />
-                Demander en pret
-              </button>
-            )}
+            ) : !isOwner && book.owner ? (
+              <LoanRequestButton
+                bookId={book.id}
+                bookTitle={book.title}
+                ownerName={book.owner.name ?? book.owner.email.split("@")[0]!}
+                alreadyRequested={Boolean(myActiveRequest)}
+              />
+            ) : null}
             {canDelete ? <DeleteBookButton id={book.id} title={book.title} /> : null}
           </div>
 
@@ -89,6 +104,9 @@ export function BookDetail({ book, currentUser }: Props) {
           <div className="mt-6 flex flex-wrap items-center gap-6 border-t border-[var(--rule-2)] pt-6 text-[13px] text-ink-3">
             <PersonLine label="Ajoute par" person={book.addedBy} />
             {book.owner ? <PersonLine label="Proprietaire" person={book.owner} /> : null}
+            {acceptedLoan ? (
+              <PersonLine label="Actuellement chez" person={acceptedLoan.requester} />
+            ) : null}
           </div>
         </div>
       </div>

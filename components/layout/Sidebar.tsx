@@ -28,13 +28,7 @@ type NavLink = {
 
 const PRIMARY_LINKS: NavLink[] = [
   { href: "/bibliotheque", label: "Bibliotheque", Icon: Library },
-  {
-    href: "/pret",
-    label: "Pret",
-    Icon: HandHelping,
-    disabled: true,
-    hint: "Bientot disponible"
-  }
+  { href: "/pret", label: "Pret", Icon: HandHelping }
 ]
 
 const PERSONAL_LINKS: NavLink[] = [

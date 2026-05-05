@@ -1,6 +1,19 @@
+import "dotenv/config"
+import path from "node:path"
+import fs from "node:fs"
+import { config as loadDotenv } from "dotenv"
 import { PrismaClient } from "@prisma/client"
+import { PrismaPg } from "@prisma/adapter-pg"
 
-const prisma = new PrismaClient()
+for (const file of [".env.local", ".env"]) {
+  const p = path.resolve(process.cwd(), file)
+  if (fs.existsSync(p)) loadDotenv({ path: p, override: false })
+}
+
+const url = process.env.DATABASE_URL
+if (!url) throw new Error("DATABASE_URL non defini.")
+
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) })
 
 const PALETTE = ["#6b6354", "#8a6b1f", "#4a6b3e", "#a86a1f", "#8a3030", "#5a4711", "#3a342a"]
 
