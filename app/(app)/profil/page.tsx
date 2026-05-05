@@ -2,19 +2,31 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
+import { db } from "@/lib/db"
 import { Avatar } from "@/components/ui/Avatar"
 import { Badge } from "@/components/ui/Badge"
 import { SignOutButton } from "@/components/auth/SignOutButton"
+import { EditableName } from "@/components/profile/EditableName"
 
 export const metadata: Metadata = {
   title: "Profil"
 }
 
+export const dynamic = "force-dynamic"
+
 export default async function ProfilPage() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.email) redirect("/login")
 
-  const { name, email, role, avatarColor } = session.user
+  // On lit le nom depuis la DB plutot que depuis le JWT : router.refresh()
+  // re-rend le server component, et la DB est la source de verite (le JWT
+  // peut avoir un cycle de refresh legerement decale).
+  const me = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { name: true }
+  })
+  const name = me?.name ?? session.user.name ?? null
+  const { email, role, avatarColor } = session.user
 
   return (
     <section className="mx-auto max-w-2xl">
@@ -24,12 +36,10 @@ export default async function ProfilPage() {
       </header>
 
       <div className="rounded-2xl border border-[var(--rule)] bg-paper-2/60 p-6">
-        <div className="flex items-center gap-4">
+        <div className="flex items-start gap-4">
           <Avatar name={name} email={email} color={avatarColor} size="lg" />
-          <div className="min-w-0">
-            <p className="truncate font-serif text-xl text-ink">
-              {name ?? email.split("@")[0]}
-            </p>
+          <div className="min-w-0 flex-1">
+            <EditableName initialName={name} email={email} />
             <div className="mt-1 flex items-center gap-2">
               <span className="truncate text-[13px] text-ink-3">{email}</span>
               <Badge tone={role === "ADMIN" ? "accent" : "neutral"}>

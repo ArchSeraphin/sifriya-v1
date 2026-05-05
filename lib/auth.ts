@@ -59,7 +59,9 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role
         token.avatarColor = user.avatarColor
       } else if (trigger === "update" || !token.role) {
-        // Refresh depuis la DB si jamais le role a change.
+        // Trigger "update" : declenche par useSession().update() apres une
+        // modification de profil. On rafraichit nom + role + avatarColor depuis
+        // la DB pour que l'UI reflete instantanement la nouvelle valeur.
         const fresh = token.email
           ? await db.user.findUnique({ where: { email: token.email } })
           : null
@@ -67,6 +69,7 @@ export const authOptions: NextAuthOptions = {
           token.id = fresh.id
           token.role = fresh.role
           token.avatarColor = fresh.avatarColor
+          token.name = fresh.name
         }
       }
       return token
