@@ -22,9 +22,19 @@ export async function GET(_req: Request, ctx: { params: Promise<{ path: string[]
   }
 
   const { path: parts } = await ctx.params
-  // On reconstruit la cle relative et on s'assure qu'elle reste sous "covers/".
+  // Garde-fou : on rejette tout segment "..", "/", "\" ou vide. La cle finale
+  // doit imperativement vivre sous covers/.
+  if (parts.some((p) => p === "" || p.includes("..") || p.includes("/") || p.includes("\\"))) {
+    return new Response("Introuvable.", { status: 404 })
+  }
   const safe = ["covers", ...parts].join("/")
-  const stat = await statByKey(safe)
+
+  let stat: { size: number } | null
+  try {
+    stat = await statByKey(safe)
+  } catch {
+    return new Response("Introuvable.", { status: 404 })
+  }
   if (!stat) return new Response("Introuvable.", { status: 404 })
 
   const ext = safe.split(".").pop()?.toLowerCase() ?? ""
