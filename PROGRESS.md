@@ -91,6 +91,10 @@ Coller l'URL imprimée dans le navigateur.
 
 ## Reste à faire (en attente de demande)
 
+**À arbitrer avec le user (identifié en prod, 2026-05-05) :**
+- **Doublons** : aucun garde-fou actuellement. Définir critère (ISBN ? titre+auteur normalisés ? hash de fichier ?) et UX (bloquer / confirmer / proposer "autre copie"). Cas légitime à préserver : même œuvre en NUMERIQUE + PHYSIQUE.
+- **Multi-formats** : aujourd'hui Candide EPUB + Candide PDF = 2 livres distincts. Refactor schéma possible : `Book` a `0..N BookFile` (chacun son format/filePath). Impact : migration data + refonte UploadFlow / BookDetail / API download. Décision schéma à prendre avant d'implémenter.
+
 **Polish potentiel non demandé :**
 - Extraction auto du titre depuis EPUB (jszip → OPF) / PDF (pdf-lib → info dict)
 - Cron de nettoyage `_pending/` des uploads orphelins (>1h)
