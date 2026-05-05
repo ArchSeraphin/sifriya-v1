@@ -29,9 +29,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+# node_modules complet du builder pour que la CLI prisma trouve toutes ses deps
+# (le standalone tree-shake l'app mais pas la CLI). Override le node_modules du standalone.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 # Volume monte par Coolify
 RUN mkdir -p /data/uploads && chown -R nextjs:nodejs /data
