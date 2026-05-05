@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { X } from "lucide-react"
 import { cn } from "@/lib/cn"
 
@@ -21,22 +22,30 @@ const sizeClass = {
 } as const
 
 export function Modal({ open, onClose, title, children, size = "md", footer, className }: ModalProps) {
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => setMounted(true), [])
+
   React.useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose()
     }
     window.addEventListener("keydown", onKey)
+    const previous = document.body.style.overflow
     document.body.style.overflow = "hidden"
     return () => {
       window.removeEventListener("keydown", onKey)
-      document.body.style.overflow = ""
+      document.body.style.overflow = previous
     }
   }, [open, onClose])
 
-  if (!open) return null
+  if (!open || !mounted) return null
 
-  return (
+  // Portail vers <body> : evite les pieges de containing-block (filter,
+  // backdrop-filter, transform sur un ancetre) et garantit un fixed-positioned
+  // ancre sur le viewport.
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -47,7 +56,9 @@ export function Modal({ open, onClose, title, children, size = "md", footer, cla
       <div
         className={cn(
           "relative flex w-full flex-col rounded-2xl bg-paper shadow-[var(--shadow-2)] animate-fade-in",
-          "max-h-[calc(100dvh-2rem)] overflow-hidden",
+          // En Tailwind v4, les arbitrary values exigent des underscores la ou
+          // CSS attend des espaces — calc(100dvh-2rem) est INVALIDE.
+          "max-h-[calc(100dvh_-_2rem)] overflow-hidden",
           sizeClass[size],
           className
         )}
@@ -71,6 +82,7 @@ export function Modal({ open, onClose, title, children, size = "md", footer, cla
           </footer>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
