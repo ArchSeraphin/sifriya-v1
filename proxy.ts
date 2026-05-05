@@ -29,6 +29,6 @@ export const config = {
   // elles-memes de leur 401/403 — un middleware qui redirige vers /login pour
   // une requete fetch produit un 307 illisible cote client.
   matcher: [
-    "/((?!api|login|verify|_next/static|_next/image|favicon.ico|logo.svg).*)"
+    "/((?!api|login|verify|_next/static|_next/image|favicon.ico|logo.svg|icon.svg|apple-icon).*)"
   ]
 }
