@@ -1,0 +1,1337 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Sifriya — Design System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper:      #f5f1e8;
+    --paper-2:    #ede7d8;
+    --paper-3:    #e3dcc8;
+    --ink:        #1f1b13;
+    --ink-2:      #3a342a;
+    --ink-3:      #6b6354;
+    --ink-4:      #9a9180;
+    --rule:       rgba(31, 27, 19, 0.12);
+    --rule-2:     rgba(31, 27, 19, 0.06);
+    --accent:     #8a6b1f;
+    --accent-ink: #faf7ef;
+    --accent-soft:#e8dcb8;
+    --ok:         #4a6b3e;
+    --warn:       #a86a1f;
+    --err:        #8a3030;
+    --serif:  "Source Serif 4", Georgia, serif;
+    --sans:   "Inter", -apple-system, system-ui, sans-serif;
+    --mono:   "JetBrains Mono", ui-monospace, Menlo, monospace;
+    --shadow-1: 0 1px 0 rgba(255,255,255,.4) inset, 0 1px 2px rgba(31,27,19,.06);
+    --shadow-2: 0 1px 0 rgba(255,255,255,.5) inset, 0 6px 24px rgba(31,27,19,.10);
+  }
+  *,*::before,*::after { box-sizing: border-box; }
+  html,body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--paper);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,h2,h3,h4 { margin: 0; font-weight: 500; letter-spacing: -0.01em; }
+
+  /* Layout */
+  .ds-shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .ds-nav {
+    border-right: 1px solid var(--rule);
+    padding: 32px 20px;
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    background: var(--paper);
+  }
+  .ds-nav .brand {
+    font-family: var(--serif); font-size: 22px; font-weight: 600;
+    letter-spacing: -0.02em; margin-bottom: 4px;
+  }
+  .ds-nav .brand-sub {
+    font-size: 11px; color: var(--ink-3); text-transform: uppercase;
+    letter-spacing: 0.1em; margin-bottom: 28px;
+  }
+  .ds-nav-section {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--ink-4);
+    margin: 22px 0 8px;
+  }
+  .ds-nav a {
+    display: block; padding: 6px 10px; color: var(--ink-2);
+    border-radius: 4px; font-size: 13px; text-decoration: none;
+    margin-bottom: 1px;
+  }
+  .ds-nav a:hover { background: var(--paper-2); color: var(--ink); }
+
+  .ds-main { padding: 64px 80px; max-width: 1100px; }
+
+  .ds-h1 {
+    font-family: var(--serif); font-size: 56px; font-weight: 400;
+    letter-spacing: -0.025em; line-height: 1.05; margin-bottom: 12px;
+  }
+  .ds-lede {
+    font-family: var(--serif); font-size: 19px; line-height: 1.5;
+    color: var(--ink-2); max-width: 640px; margin-bottom: 60px;
+    font-weight: 300;
+  }
+
+  .ds-section { margin-bottom: 96px; scroll-margin-top: 24px; }
+  .ds-section-h {
+    display: flex; align-items: baseline; gap: 16px;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 14px; margin-bottom: 32px;
+  }
+  .ds-section-num {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-4);
+  }
+  .ds-section-h h2 {
+    font-family: var(--serif); font-size: 32px; font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+  .ds-section-h .ds-meta {
+    margin-left: auto; font-size: 12px; color: var(--ink-3);
+  }
+
+  .ds-sub-h {
+    font-family: var(--serif); font-size: 22px; font-weight: 500;
+    letter-spacing: -0.015em; margin: 36px 0 4px;
+  }
+  .ds-sub-desc {
+    font-size: 14px; color: var(--ink-3); line-height: 1.5;
+    margin-bottom: 20px; max-width: 580px;
+  }
+
+  /* Cards */
+  .ds-card {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 24px;
+  }
+
+  /* Tokens */
+  .ds-token-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .ds-swatch {
+    border-radius: 8px; overflow: hidden; border: 1px solid var(--rule);
+  }
+  .ds-swatch-fill { aspect-ratio: 16/10; }
+  .ds-swatch-meta {
+    padding: 10px 12px; background: var(--paper);
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .ds-swatch-name { font-size: 13px; font-weight: 500; }
+  .ds-swatch-val { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+
+  /* Type */
+  .ds-type-row {
+    display: grid; grid-template-columns: 200px 1fr; gap: 32px;
+    padding: 20px 0; border-bottom: 1px solid var(--rule-2);
+    align-items: baseline;
+  }
+  .ds-type-row:last-child { border-bottom: 0; }
+  .ds-type-name {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .ds-type-name b { display: block; color: var(--ink); margin-bottom: 4px; font-family: var(--sans); font-size: 13px; text-transform: none; letter-spacing: 0; }
+
+  /* Spacing */
+  .ds-space-row {
+    display: grid; grid-template-columns: 80px 1fr 80px; gap: 20px;
+    align-items: center; padding: 10px 0;
+  }
+  .ds-space-bar { background: var(--accent-soft); height: 12px; border-radius: 2px; }
+
+  /* Buttons */
+  .sif-btn {
+    height: 36px; padding: 0 16px;
+    font-family: var(--sans); font-size: 14px; font-weight: 500;
+    border-radius: 6px; border: 1px solid transparent;
+    display: inline-flex; align-items: center; gap: 8px;
+    cursor: default; line-height: 1; transition: background .12s;
+    background: transparent; color: var(--ink);
+  }
+  .sif-btn--primary { background: var(--accent); color: var(--accent-ink); }
+  .sif-btn--primary:hover { background: #6e561a; }
+  .sif-btn--secondary { background: var(--paper); border-color: var(--rule); color: var(--ink); box-shadow: var(--shadow-1); }
+  .sif-btn--secondary:hover { background: var(--paper-2); }
+  .sif-btn--ghost { color: var(--ink-2); }
+  .sif-btn--ghost:hover { background: var(--paper-2); }
+  .sif-btn--danger { background: transparent; color: var(--err); border-color: rgba(138,48,48,.3); }
+  .sif-btn--sm { height: 28px; padding: 0 12px; font-size: 13px; gap: 6px; }
+  .sif-btn--lg { height: 44px; padding: 0 22px; font-size: 15px; }
+  .sif-btn:disabled { opacity: .4; }
+
+  /* Inputs */
+  .sif-input, .sif-select {
+    height: 36px; padding: 0 12px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: var(--paper);
+    font-size: 14px; width: 100%;
+    box-shadow: 0 1px 0 rgba(255,255,255,.4) inset;
+  }
+  .sif-input:focus, .sif-select:focus {
+    outline: 0; border-color: var(--ink-3);
+    box-shadow: 0 0 0 3px rgba(31,27,19,.05);
+  }
+  .sif-textarea { padding: 10px 12px; height: auto; resize: vertical; min-height: 80px; }
+
+  /* Pills */
+  .sif-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 24px; padding: 0 10px;
+    font-size: 12px; font-weight: 500;
+    background: var(--paper-2); border-radius: 12px;
+    color: var(--ink-2);
+  }
+  .sif-pill--ok { background: rgba(74,107,62,.12); color: var(--ok); }
+  .sif-pill--warn { background: rgba(168,106,31,.14); color: var(--warn); }
+  .sif-pill--accent { background: var(--accent-soft); color: #5a4711; }
+
+  /* Cover */
+  .sif-cover {
+    aspect-ratio: 2/3; background: #3d2f17; border-radius: 3px;
+    box-shadow: 0 1px 1px rgba(31,27,19,.15), 0 8px 18px rgba(31,27,19,.18);
+    color: rgba(245,241,232,.95); padding: 14px 12px;
+    display: flex; flex-direction: column; gap: 6px;
+    position: relative; overflow: hidden;
+  }
+  .sif-cover::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+    background: rgba(0,0,0,.18); box-shadow: 1px 0 0 rgba(255,255,255,.06);
+  }
+  .sif-cover-format {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em;
+    opacity: .7; align-self: flex-end;
+  }
+  .sif-cover-title { font-family: var(--serif); font-size: 13px; line-height: 1.2; margin-top: auto; }
+  .sif-cover-author { font-size: 10px; opacity: .75; }
+
+  /* Avatar */
+  .sif-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; color: white;
+    background: #6b6354; flex-shrink: 0;
+  }
+  .sif-avatar--sm { width: 22px; height: 22px; font-size: 10px; }
+  .sif-avatar--lg { width: 44px; height: 44px; font-size: 14px; }
+
+  /* Components grid */
+  .ds-comp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .ds-comp-card {
+    border: 1px solid var(--rule); border-radius: 8px;
+    overflow: hidden; background: var(--paper);
+  }
+  .ds-comp-preview {
+    padding: 28px 20px;
+    background: linear-gradient(to bottom, var(--paper-2), var(--paper));
+    display: flex; align-items: center; justify-content: center;
+    min-height: 120px; flex-wrap: wrap; gap: 8px;
+  }
+  .ds-comp-meta {
+    padding: 12px 16px; border-top: 1px solid var(--rule);
+    background: var(--paper);
+  }
+  .ds-comp-name { font-size: 13px; font-weight: 500; }
+  .ds-comp-desc { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+  .ds-comp-code {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-4);
+    margin-top: 6px;
+  }
+
+  /* Code block */
+  .ds-code {
+    font-family: var(--mono); font-size: 12px;
+    background: var(--paper-2); padding: 14px 18px;
+    border-radius: 6px; line-height: 1.55;
+    color: var(--ink-2); overflow-x: auto;
+    border: 1px solid var(--rule);
+  }
+  .ds-code .key { color: var(--accent); }
+  .ds-code .val { color: var(--ok); }
+  .ds-code .com { color: var(--ink-4); font-style: italic; }
+
+  /* Patterns */
+  .ds-pattern {
+    border: 1px solid var(--rule); border-radius: 10px;
+    overflow: hidden; margin-bottom: 24px;
+  }
+  .ds-pattern-h {
+    padding: 14px 20px; background: var(--paper);
+    display: flex; align-items: center; gap: 14px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .ds-pattern-h h4 { font-family: var(--serif); font-size: 18px; font-weight: 500; }
+  .ds-pattern-h .meta { margin-left: auto; font-size: 12px; color: var(--ink-3); }
+  .ds-pattern-body {
+    padding: 28px; background: var(--paper-2);
+  }
+
+  /* Anatomy diagram */
+  .anatomy {
+    background: var(--paper); padding: 32px;
+    display: grid; grid-template-columns: 320px 1fr; gap: 40px;
+    border: 1px solid var(--rule); border-radius: 10px;
+  }
+  .anatomy ol {
+    margin: 0; padding-left: 0; list-style: none; counter-reset: anatomy;
+    font-size: 13px; line-height: 1.6;
+  }
+  .anatomy ol li {
+    counter-increment: anatomy;
+    padding-left: 32px; position: relative;
+    margin-bottom: 12px;
+    color: var(--ink-2);
+  }
+  .anatomy ol li::before {
+    content: counter(anatomy);
+    position: absolute; left: 0; top: 1px;
+    width: 22px; height: 22px;
+    border: 1px solid var(--accent); color: var(--accent);
+    border-radius: 50%; display: grid; place-items: center;
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+  }
+  .anatomy ol li b { display: block; color: var(--ink); margin-bottom: 2px; font-weight: 500; }
+
+  /* Tables */
+  .ds-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .ds-table th, .ds-table td {
+    text-align: left; padding: 10px 14px;
+    border-bottom: 1px solid var(--rule-2);
+  }
+  .ds-table th {
+    font-weight: 500; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--ink-3);
+    border-bottom: 1px solid var(--rule);
+  }
+  .ds-table code {
+    font-family: var(--mono); font-size: 12px;
+    background: var(--paper-2); padding: 2px 6px; border-radius: 3px;
+  }
+
+  /* Mini icon */
+  .ico {
+    width: 14px; height: 14px;
+    stroke: currentColor; fill: none; stroke-width: 1.5;
+    stroke-linecap: round; stroke-linejoin: round;
+    vertical-align: -2px;
+  }
+
+  /* Voice grid */
+  .voice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .voice-card { padding: 20px; border-radius: 8px; }
+  .voice-card.do { background: rgba(74,107,62,.08); border: 1px solid rgba(74,107,62,.2); }
+  .voice-card.dont { background: rgba(138,48,48,.06); border: 1px solid rgba(138,48,48,.2); }
+  .voice-card .label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+  .voice-card.do .label { color: var(--ok); }
+  .voice-card.dont .label { color: var(--err); }
+  .voice-card p { margin: 0 0 8px; font-family: var(--serif); font-size: 15px; line-height: 1.5; color: var(--ink-2); }
+
+  /* Spacing scale visual */
+  .density-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .density-card {
+    border: 1px solid var(--rule); border-radius: 8px;
+    background: var(--paper); padding: 18px;
+  }
+  .density-card h5 {
+    font-family: var(--serif); font-size: 16px; font-weight: 500; margin: 0 0 4px;
+  }
+  .density-card .desc { font-size: 12px; color: var(--ink-3); margin-bottom: 14px; }
+  .density-card .demo {
+    background: var(--paper-2); border-radius: 4px; padding: 10px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .density-card .demo .row { background: var(--paper); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="ds-shell">
+
+<aside class="ds-nav">
+  <div class="brand">Sifriya</div>
+  <div class="brand-sub">Design System · v1.0</div>
+
+  <div class="ds-nav-section">Fondations</div>
+  <a href="#principes">Principes</a>
+  <a href="#voix">Voix &amp; ton</a>
+  <a href="#couleurs">Couleurs</a>
+  <a href="#typographie">Typographie</a>
+  <a href="#espacement">Espacement &amp; densité</a>
+  <a href="#elevation">Élévation &amp; bordures</a>
+  <a href="#iconographie">Iconographie</a>
+
+  <div class="ds-nav-section">Composants</div>
+  <a href="#boutons">Boutons</a>
+  <a href="#formulaires">Formulaires</a>
+  <a href="#pills">Pills &amp; statuts</a>
+  <a href="#avatars">Avatars</a>
+  <a href="#couvertures">Couvertures de livres</a>
+  <a href="#cards">Cards &amp; rangées</a>
+  <a href="#navigation">Navigation</a>
+  <a href="#feedback">Modales &amp; feedback</a>
+
+  <div class="ds-nav-section">Patterns</div>
+  <a href="#layout">Layouts d'écran</a>
+  <a href="#listes">Listes &amp; étagères</a>
+  <a href="#flux">Flux &amp; demandes</a>
+
+  <div class="ds-nav-section">Référence</div>
+  <a href="#themes">Thèmes</a>
+  <a href="#tokens">Tokens (récap)</a>
+  <a href="#a11y">Accessibilité</a>
+</aside>
+
+<main class="ds-main">
+
+  <h1 class="ds-h1">Sifriya<br/>Design System</h1>
+  <p class="ds-lede">
+    Un langage visuel pour une bibliothèque partagée — entre la sérénité d'une page imprimée et la précision d'une interface logicielle. Conçu pour des lecteurs de tous âges, sur écran et tactile.
+  </p>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="principes">
+    <div class="ds-section-h">
+      <span class="ds-section-num">01</span>
+      <h2>Principes</h2>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+      <div class="ds-card">
+        <h3 style="font-family: var(--serif); font-size: 20px; margin-bottom: 8px;">Le livre d'abord</h3>
+        <p style="color: var(--ink-3); line-height: 1.6; margin: 0;">L'objet livre — sa couverture, son titre, sa typographie — occupe l'espace central. L'interface s'efface pour servir la lecture, pas l'inverse.</p>
+      </div>
+      <div class="ds-card">
+        <h3 style="font-family: var(--serif); font-size: 20px; margin-bottom: 8px;">Sobriété éditoriale</h3>
+        <p style="color: var(--ink-3); line-height: 1.6; margin: 0;">Pas de gradients tape-à-l'œil, pas d'icônes décoratives. La hiérarchie passe par la typo et l'espace blanc, comme dans une mise en page imprimée soignée.</p>
+      </div>
+      <div class="ds-card">
+        <h3 style="font-family: var(--serif); font-size: 20px; margin-bottom: 8px;">Calme &amp; chaleur</h3>
+        <p style="color: var(--ink-3); line-height: 1.6; margin: 0;">Une palette papier-encre qui repose les yeux, des transitions douces, aucune notification agressive. L'app doit rester un endroit où l'on a envie de revenir.</p>
+      </div>
+      <div class="ds-card">
+        <h3 style="font-family: var(--serif); font-size: 20px; margin-bottom: 8px;">Inclusif par défaut</h3>
+        <p style="color: var(--ink-3); line-height: 1.6; margin: 0;">Lisibilité 20–80 ans : tailles confortables, contrastes AA+, polices alternatives (dont une dyslexie-friendly), modes jour/sépia/nuit dans la liseuse.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="voix">
+    <div class="ds-section-h">
+      <span class="ds-section-num">02</span>
+      <h2>Voix &amp; ton</h2>
+      <span class="ds-meta">FR · tutoiement neutre</span>
+    </div>
+    <p class="ds-sub-desc">Sifriya s'adresse à ses utilisateurs comme un libraire bienveillant : direct, précis, jamais infantilisant. Phrases courtes en français correct, vocabulaire du livre (étagère, emprunt, fiche, édition).</p>
+
+    <div class="voice-grid">
+      <div class="voice-card do">
+        <div class="label">À faire</div>
+        <p>« Marie aimerait emprunter <i>L'Étranger</i>. »</p>
+        <p>« Demande envoyée à Pierre. Vous serez prévenu(e) dès qu'il répond. »</p>
+        <p>« Ajouter à mon étagère »</p>
+        <p>« 437 pages · Édition Folio · 2014 »</p>
+      </div>
+      <div class="voice-card dont">
+        <div class="label">À éviter</div>
+        <p>« Marie veut récupérer un livre 📚✨ »</p>
+        <p>« Super ! Votre demande a bien été prise en compte 🎉 »</p>
+        <p>« Boostez votre collection »</p>
+        <p>« Ce best-seller incontournable »</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="couleurs">
+    <div class="ds-section-h">
+      <span class="ds-section-num">03</span>
+      <h2>Couleurs</h2>
+      <span class="ds-meta">Palette papier-encre · accent doré</span>
+    </div>
+
+    <h3 class="ds-sub-h">Surfaces — papier</h3>
+    <p class="ds-sub-desc">Trois nuances de papier crème pour structurer la profondeur sans recourir à des ombres. <code>--paper</code> est le fond global ; <code>--paper-2</code> sert aux surfaces secondaires (cartes, panneaux) ; <code>--paper-3</code> pour les rangées hover et zones de drop.</p>
+
+    <div class="ds-token-grid">
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#f5f1e8"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">paper</span><span class="ds-swatch-val">#F5F1E8 · --paper</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#ede7d8"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">paper-2</span><span class="ds-swatch-val">#EDE7D8 · --paper-2</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#e3dcc8"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">paper-3</span><span class="ds-swatch-val">#E3DCC8 · --paper-3</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#faf7ef"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">paper-up</span><span class="ds-swatch-val">#FAF7EF · liseuse jour</span></div></div>
+    </div>
+
+    <h3 class="ds-sub-h">Encres — texte &amp; règles</h3>
+    <p class="ds-sub-desc">Quatre tons d'encre pour la hiérarchie textuelle. Toujours commencer par <code>--ink</code> et descendre. <code>--rule</code> pour les séparateurs.</p>
+
+    <div class="ds-token-grid">
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#1f1b13"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">ink</span><span class="ds-swatch-val">#1F1B13 · titre</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#3a342a"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">ink-2</span><span class="ds-swatch-val">#3A342A · corps</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#6b6354"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">ink-3</span><span class="ds-swatch-val">#6B6354 · meta</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#9a9180"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">ink-4</span><span class="ds-swatch-val">#9A9180 · placeholder</span></div></div>
+    </div>
+
+    <h3 class="ds-sub-h">Accent &amp; sémantique</h3>
+    <p class="ds-sub-desc">Un seul accent — doré antique — pour les actions principales et les états sélectionnés. Réservé : ne l'utilisez jamais pour de la décoration. Le rouge n'apparaît que pour les alertes destructives confirmées.</p>
+
+    <div class="ds-token-grid">
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#8a6b1f"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">accent</span><span class="ds-swatch-val">#8A6B1F · doré</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#e8dcb8"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">accent-soft</span><span class="ds-swatch-val">#E8DCB8 · pill</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#4a6b3e"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">ok</span><span class="ds-swatch-val">#4A6B3E · validé</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#a86a1f"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">warn</span><span class="ds-swatch-val">#A86A1F · attente</span></div></div>
+    </div>
+
+    <h3 class="ds-sub-h">Couvertures de livres</h3>
+    <p class="ds-sub-desc">Quand l'image de couverture n'est pas disponible, on génère un placeholder typographique sur l'une des 8 teintes ci-dessous. Choisies pour évoquer reliure, tissu et papier teinté — jamais pastel.</p>
+    <div class="ds-token-grid">
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#3d2f17"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">Cuir tabac</span><span class="ds-swatch-val">#3D2F17</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#4a2e2e"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">Bordeaux</span><span class="ds-swatch-val">#4A2E2E</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#2e3d4a"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">Bleu nuit</span><span class="ds-swatch-val">#2E3D4A</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#3a4a2e"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">Vert sombre</span><span class="ds-swatch-val">#3A4A2E</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#5a3a1f"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">Acajou</span><span class="ds-swatch-val">#5A3A1F</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#3a1f2e"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">Prune</span><span class="ds-swatch-val">#3A1F2E</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#2e3a3a"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">Encre</span><span class="ds-swatch-val">#2E3A3A</span></div></div>
+      <div class="ds-swatch"><div class="ds-swatch-fill" style="background:#4a4a2e"></div><div class="ds-swatch-meta"><span class="ds-swatch-name">Olive</span><span class="ds-swatch-val">#4A4A2E</span></div></div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="typographie">
+    <div class="ds-section-h">
+      <span class="ds-section-num">04</span>
+      <h2>Typographie</h2>
+      <span class="ds-meta">Source Serif 4 + Inter + JetBrains Mono</span>
+    </div>
+
+    <p class="ds-sub-desc"><b>Source Serif 4</b> pour les titres, le corps des fiches livres et tout contenu éditorial — sa graisse 400 a la chaleur d'un texte imprimé. <b>Inter</b> pour toute l'UI (boutons, labels, listes). <b>JetBrains Mono</b> pour les méta-données techniques : ISBN, dates, format de fichier.</p>
+
+    <div class="ds-card">
+      <div class="ds-type-row">
+        <div class="ds-type-name"><b>Display</b>Serif · 56/60 · 400 · -2.5%</div>
+        <div style="font-family: var(--serif); font-size: 56px; line-height: 1.05; letter-spacing: -0.025em; font-weight: 400;">Le Lambeau</div>
+      </div>
+      <div class="ds-type-row">
+        <div class="ds-type-name"><b>Title</b>Serif · 32/38 · 400 · -2%</div>
+        <div style="font-family: var(--serif); font-size: 32px; line-height: 1.18; letter-spacing: -0.02em; font-weight: 400;">Mes étagères</div>
+      </div>
+      <div class="ds-type-row">
+        <div class="ds-type-name"><b>Heading</b>Serif · 22/28 · 500 · -1.5%</div>
+        <div style="font-family: var(--serif); font-size: 22px; line-height: 1.25; letter-spacing: -0.015em; font-weight: 500;">Demandes en cours</div>
+      </div>
+      <div class="ds-type-row">
+        <div class="ds-type-name"><b>Body editorial</b>Serif · 17/26 · 400</div>
+        <div style="font-family: var(--serif); font-size: 17px; line-height: 1.55; max-width: 520px;">Aux Buttes-Chaumont, en juin, le livre attendait. Une enveloppe glissée entre deux pages, et le voyage commençait — d'une étagère à l'autre, de Marie à Pierre.</div>
+      </div>
+      <div class="ds-type-row">
+        <div class="ds-type-name"><b>UI · base</b>Sans · 14/20 · 400</div>
+        <div style="font-size: 14px;">Voir la fiche · Demander à emprunter · Ajouter à mon étagère</div>
+      </div>
+      <div class="ds-type-row">
+        <div class="ds-type-name"><b>UI · small</b>Sans · 13/18 · 500</div>
+        <div style="font-size: 13px; font-weight: 500;">Marie Lefèvre · Paris 19ᵉ · 12 livres physiques</div>
+      </div>
+      <div class="ds-type-row">
+        <div class="ds-type-name"><b>Caption</b>Sans · 12/16 · 400 · ink-3</div>
+        <div style="font-size: 12px; color: var(--ink-3);">Édition Folio · 2014 · 437 pages</div>
+      </div>
+      <div class="ds-type-row">
+        <div class="ds-type-name"><b>Mono</b>JBMono · 12 · 500 · uppercase</div>
+        <div style="font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;">ISBN 978-2-07-036002-4</div>
+      </div>
+      <div class="ds-type-row">
+        <div class="ds-type-name"><b>Eyebrow</b>Sans · 11 · 600 · uppercase · 8% LS</div>
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3);">Section · Romans</div>
+      </div>
+    </div>
+
+    <h3 class="ds-sub-h">Polices alternatives — liseuse</h3>
+    <p class="ds-sub-desc">Trois familles disponibles dans la liseuse, sélectionnables par l'utilisateur. <b>Atkinson Hyperlegible</b> est conçue pour les troubles de la vision et de la dyslexie.</p>
+    <table class="ds-table">
+      <thead><tr><th>Famille</th><th>Usage</th><th>Pourquoi</th></tr></thead>
+      <tbody>
+        <tr><td><b>Source Serif 4</b></td><td>Lecture par défaut</td><td>Confort longue durée, chaleur du livre</td></tr>
+        <tr><td><b>EB Garamond</b></td><td>Lecture classique</td><td>Pour les romans, tradition typographique française</td></tr>
+        <tr><td><b>Atkinson Hyperlegible</b></td><td>Accessibilité</td><td>Formes différenciées (a, l, I, 1, 0…), dyslexie-friendly</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="espacement">
+    <div class="ds-section-h">
+      <span class="ds-section-num">05</span>
+      <h2>Espacement &amp; densité</h2>
+      <span class="ds-meta">Échelle 4px · 3 densités</span>
+    </div>
+
+    <p class="ds-sub-desc">Tout l'espacement est multiple de 4px. Trois densités sélectionnables permettent d'adapter l'app aux usages : tactile / souris / écran haute résolution.</p>
+
+    <div class="ds-card" style="margin-bottom: 32px;">
+      <div class="ds-space-row"><span class="ds-swatch-val">space-1</span><div class="ds-space-bar" style="width: 4px;"></div><span class="ds-swatch-val">4px</span></div>
+      <div class="ds-space-row"><span class="ds-swatch-val">space-2</span><div class="ds-space-bar" style="width: 8px;"></div><span class="ds-swatch-val">8px</span></div>
+      <div class="ds-space-row"><span class="ds-swatch-val">space-3</span><div class="ds-space-bar" style="width: 12px;"></div><span class="ds-swatch-val">12px</span></div>
+      <div class="ds-space-row"><span class="ds-swatch-val">space-4</span><div class="ds-space-bar" style="width: 16px;"></div><span class="ds-swatch-val">16px · base</span></div>
+      <div class="ds-space-row"><span class="ds-swatch-val">space-6</span><div class="ds-space-bar" style="width: 24px;"></div><span class="ds-swatch-val">24px</span></div>
+      <div class="ds-space-row"><span class="ds-swatch-val">space-8</span><div class="ds-space-bar" style="width: 32px;"></div><span class="ds-swatch-val">32px</span></div>
+      <div class="ds-space-row"><span class="ds-swatch-val">space-12</span><div class="ds-space-bar" style="width: 48px;"></div><span class="ds-swatch-val">48px · section</span></div>
+      <div class="ds-space-row"><span class="ds-swatch-val">space-16</span><div class="ds-space-bar" style="width: 64px;"></div><span class="ds-swatch-val">64px · page</span></div>
+    </div>
+
+    <h3 class="ds-sub-h">Densités</h3>
+    <p class="ds-sub-desc">L'utilisateur choisit dans Tweaks. Toute l'app s'ajuste via les variables CSS <code>--row-h</code>, <code>--pad</code>, <code>--gap</code>.</p>
+
+    <div class="density-grid">
+      <div class="density-card">
+        <h5>Compact</h5>
+        <div class="desc">Souris · données denses<br/>row-h 36 · pad 12 · gap 12</div>
+        <div class="demo">
+          <div class="row" style="height: 28px;"></div>
+          <div class="row" style="height: 28px;"></div>
+          <div class="row" style="height: 28px;"></div>
+          <div class="row" style="height: 28px;"></div>
+        </div>
+      </div>
+      <div class="density-card">
+        <h5>Regular · défaut</h5>
+        <div class="desc">Usage courant<br/>row-h 44 · pad 16 · gap 16</div>
+        <div class="demo">
+          <div class="row" style="height: 36px;"></div>
+          <div class="row" style="height: 36px;"></div>
+          <div class="row" style="height: 36px;"></div>
+        </div>
+      </div>
+      <div class="density-card">
+        <h5>Comfy</h5>
+        <div class="desc">Tactile · seniors<br/>row-h 52 · pad 22 · gap 22</div>
+        <div class="demo">
+          <div class="row" style="height: 44px;"></div>
+          <div class="row" style="height: 44px;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="elevation">
+    <div class="ds-section-h">
+      <span class="ds-section-num">06</span>
+      <h2>Élévation &amp; bordures</h2>
+    </div>
+    <p class="ds-sub-desc">Sifriya privilégie la <b>règle</b> à l'<b>ombre</b>. Les ombres sont réservées aux objets qui flottent (modales, panneaux Tweaks) et aux couvertures de livres pour évoquer leur volume physique.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+      <div style="padding: 24px; background: var(--paper); border: 1px solid var(--rule); border-radius: 8px;">
+        <div style="font-family: var(--mono); font-size: 11px; color: var(--ink-3); margin-bottom: 8px;">--rule</div>
+        <div style="font-size: 13px;">1px sur encre 12% · règles fines, rangées de tableau</div>
+      </div>
+      <div style="padding: 24px; background: var(--paper); border-radius: 8px; box-shadow: var(--shadow-1);">
+        <div style="font-family: var(--mono); font-size: 11px; color: var(--ink-3); margin-bottom: 8px;">--shadow-1</div>
+        <div style="font-size: 13px;">Boutons secondaires, surfaces sub-flottantes</div>
+      </div>
+      <div style="padding: 24px; background: var(--paper); border-radius: 8px; box-shadow: var(--shadow-2);">
+        <div style="font-family: var(--mono); font-size: 11px; color: var(--ink-3); margin-bottom: 8px;">--shadow-2</div>
+        <div style="font-size: 13px;">Modales, panneaux Tweaks, popovers</div>
+      </div>
+    </div>
+
+    <h3 class="ds-sub-h">Rayons</h3>
+    <table class="ds-table">
+      <tbody>
+        <tr><td><code>--radius</code></td><td>6px</td><td>Boutons, inputs, pills, rangées</td></tr>
+        <tr><td><code>--radius-lg</code></td><td>10px</td><td>Cards, modales, panneaux</td></tr>
+        <tr><td><code>3px</code></td><td>3px</td><td>Couvertures de livres uniquement</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="iconographie">
+    <div class="ds-section-h">
+      <span class="ds-section-num">07</span>
+      <h2>Iconographie</h2>
+      <span class="ds-meta">Stroke 1.5 · 14px par défaut</span>
+    </div>
+    <p class="ds-sub-desc">Icônes line, stroke 1.5px, terminaisons arrondies. Jamais d'icône décorative — chaque icône doit clarifier une action ou un statut. Tailles : 12px (inline), 14px (UI), 18px (boutons large), 22px (vide / placeholder).</p>
+
+    <div class="ds-card" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 24px; padding: 32px;">
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">search</div></div>
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">bookmark</div></div>
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zm20 0h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">book</div></div>
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">users</div></div>
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">location</div></div>
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">download</div></div>
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">upload</div></div>
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">check</div></div>
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">close</div></div>
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">chevron</div></div>
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">plus</div></div>
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">trash</div></div>
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">edit</div></div>
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">info</div></div>
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="4"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">sun</div></div>
+      <div style="text-align: center;"><svg class="ico" style="width:22px;height:22px;" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3);">moon</div></div>
+    </div>
+    <p class="ds-sub-desc" style="margin-top: 16px;">Source : ensemble custom inspiré de Lucide. Si une icône manque, dessinez-la dans le même style — surtout pas Material/Emoji/Heroicons mélangés.</p>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="boutons">
+    <div class="ds-section-h">
+      <span class="ds-section-num">08</span>
+      <h2>Boutons</h2>
+      <span class="ds-meta">3 variantes · 3 tailles</span>
+    </div>
+
+    <p class="ds-sub-desc"><b>Primary</b> : action principale d'un écran (max 1 par vue). <b>Secondary</b> : actions de support (annuler, modifier). <b>Ghost</b> : actions tertiaires, dans les cards et tableaux. <b>Danger</b> : actions destructives uniquement, jamais en primary par défaut — toujours dans une confirmation.</p>
+
+    <div class="ds-comp-grid">
+      <div class="ds-comp-card">
+        <div class="ds-comp-preview">
+          <button class="sif-btn sif-btn--primary">Demander à emprunter</button>
+        </div>
+        <div class="ds-comp-meta"><div class="ds-comp-name">Primary</div><div class="ds-comp-desc">Action principale</div></div>
+      </div>
+      <div class="ds-comp-card">
+        <div class="ds-comp-preview">
+          <button class="sif-btn sif-btn--secondary">Voir la fiche</button>
+        </div>
+        <div class="ds-comp-meta"><div class="ds-comp-name">Secondary</div><div class="ds-comp-desc">Action de support</div></div>
+      </div>
+      <div class="ds-comp-card">
+        <div class="ds-comp-preview">
+          <button class="sif-btn sif-btn--ghost">Annuler</button>
+        </div>
+        <div class="ds-comp-meta"><div class="ds-comp-name">Ghost</div><div class="ds-comp-desc">Action tertiaire</div></div>
+      </div>
+      <div class="ds-comp-card">
+        <div class="ds-comp-preview">
+          <button class="sif-btn sif-btn--danger">Supprimer</button>
+        </div>
+        <div class="ds-comp-meta"><div class="ds-comp-name">Danger</div><div class="ds-comp-desc">Action destructive (confirmation)</div></div>
+      </div>
+      <div class="ds-comp-card">
+        <div class="ds-comp-preview">
+          <button class="sif-btn sif-btn--primary sif-btn--sm">Ajouter</button>
+          <button class="sif-btn sif-btn--secondary sif-btn--sm">Filtrer</button>
+        </div>
+        <div class="ds-comp-meta"><div class="ds-comp-name">Small (28px)</div><div class="ds-comp-desc">Toolbars, cellules de tableau</div></div>
+      </div>
+      <div class="ds-comp-card">
+        <div class="ds-comp-preview">
+          <button class="sif-btn sif-btn--primary sif-btn--lg">Lire ce livre</button>
+        </div>
+        <div class="ds-comp-meta"><div class="ds-comp-name">Large (44px)</div><div class="ds-comp-desc">CTA principal de fiche</div></div>
+      </div>
+      <div class="ds-comp-card">
+        <div class="ds-comp-preview">
+          <button class="sif-btn sif-btn--primary"><svg class="ico" viewBox="0 0 24 24" style="stroke: currentColor;"><polyline points="20 6 9 17 4 12"/></svg>Confirmer</button>
+        </div>
+        <div class="ds-comp-meta"><div class="ds-comp-name">Avec icône</div><div class="ds-comp-desc">Icône avant texte, gap 8px</div></div>
+      </div>
+      <div class="ds-comp-card">
+        <div class="ds-comp-preview">
+          <button class="sif-btn sif-btn--secondary" disabled>Indisponible</button>
+        </div>
+        <div class="ds-comp-meta"><div class="ds-comp-name">Disabled</div><div class="ds-comp-desc">Opacité 40%, pas de hover</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="formulaires">
+    <div class="ds-section-h">
+      <span class="ds-section-num">09</span>
+      <h2>Formulaires</h2>
+    </div>
+
+    <p class="ds-sub-desc">Hauteur uniforme 36px. Label au-dessus, helper en-dessous, jamais de placeholder qui remplace le label. Champs requis marqués par un astérisque dans le label, jamais en rouge.</p>
+
+    <div class="ds-card" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 720px;">
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px;">Titre <span style="color: var(--accent);">*</span></label>
+        <input class="sif-input" placeholder="Cent ans de solitude" />
+        <div style="font-size: 12px; color: var(--ink-3); margin-top: 6px;">Tel qu'imprimé sur la couverture</div>
+      </div>
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px;">Genre</label>
+        <select class="sif-select">
+          <option>Roman</option>
+          <option>Essai</option>
+          <option>Poésie</option>
+        </select>
+      </div>
+      <div style="grid-column: 1/-1;">
+        <label style="display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px;">Note personnelle</label>
+        <textarea class="sif-input sif-textarea" placeholder="Pourquoi vous l'avez aimé, à qui le prêter en priorité…"></textarea>
+      </div>
+    </div>
+
+    <h3 class="ds-sub-h">Helper d'état</h3>
+    <table class="ds-table">
+      <thead><tr><th>État</th><th>Couleur</th><th>Usage</th></tr></thead>
+      <tbody>
+        <tr><td>Neutre</td><td><code>--ink-3</code></td><td>Aide contextuelle, format attendu</td></tr>
+        <tr><td>Validé</td><td><code>--ok</code></td><td>« Édition trouvée — informations pré-remplies »</td></tr>
+        <tr><td>Erreur</td><td><code>--err</code></td><td>« Cet ISBN ne correspond à aucun livre. Vérifiez les chiffres. »</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="pills">
+    <div class="ds-section-h">
+      <span class="ds-section-num">10</span>
+      <h2>Pills &amp; statuts</h2>
+    </div>
+    <p class="ds-sub-desc">Pills 24px, jamais cliquables (ce sont des indicateurs, pas des boutons). Pour des filtres cliquables, utilisez plutôt un bouton secondary small.</p>
+
+    <div class="ds-card">
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <span class="sif-pill">Numérique · ePub</span>
+        <span class="sif-pill">Physique</span>
+        <span class="sif-pill sif-pill--ok"><svg class="ico" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Disponible</span>
+        <span class="sif-pill sif-pill--warn">En cours de prêt</span>
+        <span class="sif-pill sif-pill--accent">Sélectionné</span>
+        <span class="sif-pill">En cours de lecture</span>
+        <span class="sif-pill">Roman</span>
+        <span class="sif-pill">437 pages</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="avatars">
+    <div class="ds-section-h">
+      <span class="ds-section-num">11</span>
+      <h2>Avatars</h2>
+    </div>
+    <p class="ds-sub-desc">Cercle plein, initiales blanches sur teinte stable dérivée du nom (hash). Trois tailles : 22 (inline), 32 (rangée), 44 (header de profil).</p>
+
+    <div class="ds-card" style="display: flex; gap: 32px; align-items: end;">
+      <div><div class="sif-avatar sif-avatar--sm" style="background:#7a4a2e;">ML</div><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3); font-family: var(--mono);">sm · 22</div></div>
+      <div><div class="sif-avatar" style="background:#3a4a7a;">PD</div><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3); font-family: var(--mono);">md · 32</div></div>
+      <div><div class="sif-avatar sif-avatar--lg" style="background:#4a6b3e;">SR</div><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3); font-family: var(--mono);">lg · 44</div></div>
+      <div style="display: flex; align-items: center; margin-left: 32px;">
+        <div class="sif-avatar" style="background:#7a4a2e; border: 2px solid var(--paper);">ML</div>
+        <div class="sif-avatar" style="background:#3a4a7a; border: 2px solid var(--paper); margin-left: -10px;">PD</div>
+        <div class="sif-avatar" style="background:#4a6b3e; border: 2px solid var(--paper); margin-left: -10px;">SR</div>
+        <div class="sif-avatar" style="background:#6b6354; border: 2px solid var(--paper); margin-left: -10px;">+4</div>
+        <div style="margin-left: 12px; font-size: 11px; color: var(--ink-3); font-family: var(--mono);">stack overlap −10px</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="couvertures">
+    <div class="ds-section-h">
+      <span class="ds-section-num">12</span>
+      <h2>Couvertures de livres</h2>
+      <span class="ds-meta">Ratio 2:3 · radius 3px</span>
+    </div>
+
+    <div class="anatomy">
+      <div style="display: flex; align-items: center; justify-content: center;">
+        <div class="sif-cover" style="width: 200px; background: #4a2e2e;">
+          <div class="sif-cover-format">EPUB</div>
+          <div class="sif-cover-title">Le Lambeau</div>
+          <div class="sif-cover-author">Philippe Lançon</div>
+        </div>
+      </div>
+      <div>
+        <h4 style="font-family: var(--serif); font-size: 20px; margin-bottom: 16px;">Anatomie</h4>
+        <ol>
+          <li><b>Reliure</b><span>Bande verticale plus sombre à gauche (5px), simulée en CSS — donne l'impression d'un dos de livre.</span></li>
+          <li><b>Format</b><span>Mono uppercase 9px en haut à droite. EPUB / PDF / PHYS. Optionnel sur les vignettes &lt; 60px.</span></li>
+          <li><b>Titre</b><span>Source Serif, taille proportionnelle à la largeur. Aligné en bas à gauche, max 3 lignes.</span></li>
+          <li><b>Auteur</b><span>Sans 10px, opacité 75%, sous le titre.</span></li>
+          <li><b>Ombre portée</b><span>Double ombre fine + diffuse pour l'épaisseur du livre.</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <h3 class="ds-sub-h">Variantes &amp; tailles</h3>
+    <div class="ds-card" style="display: flex; gap: 24px; align-items: end; flex-wrap: wrap;">
+      <div><div class="sif-cover" style="width: 40px; background: #3d2f17;"><div class="sif-cover-format" style="display:none;"></div></div><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3); font-family: var(--mono);">compact 40 · sans texte</div></div>
+      <div><div class="sif-cover" style="width: 80px; background: #2e3d4a;"><div class="sif-cover-format" style="display:none;"></div><div class="sif-cover-title" style="font-size: 10px;">Cent ans</div></div><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3); font-family: var(--mono);">grid 80</div></div>
+      <div><div class="sif-cover" style="width: 140px; background: #5a3a1f;"><div class="sif-cover-format">EPUB</div><div class="sif-cover-title">Mille plateaux</div><div class="sif-cover-author">Deleuze · Guattari</div></div><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3); font-family: var(--mono);">card 140</div></div>
+      <div><div class="sif-cover" style="width: 220px; background: #3a4a2e;"><div class="sif-cover-format">PHYS</div><div class="sif-cover-title">L'œuvre au noir</div><div class="sif-cover-author">Marguerite Yourcenar</div></div><div style="font-size: 11px; margin-top: 8px; color: var(--ink-3); font-family: var(--mono);">détail 220</div></div>
+    </div>
+    <p class="ds-sub-desc" style="margin-top: 16px;">Quand une vraie image de couverture est disponible (récupérée via ISBN), elle remplace ce placeholder mais conserve les mêmes proportions, le même radius et la même ombre.</p>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="cards">
+    <div class="ds-section-h">
+      <span class="ds-section-num">13</span>
+      <h2>Cards &amp; rangées</h2>
+    </div>
+
+    <h3 class="ds-sub-h">BookCard — vignette catalogue</h3>
+    <div class="ds-card" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+      <div style="cursor: default;">
+        <div class="sif-cover" style="background: #3d2f17; margin-bottom: 12px;">
+          <div class="sif-cover-format">EPUB</div>
+          <div class="sif-cover-title">Le Lambeau</div>
+          <div class="sif-cover-author">Philippe Lançon</div>
+        </div>
+        <div style="font-family: var(--serif); font-size: 15px; font-weight: 500; line-height: 1.3;">Le Lambeau</div>
+        <div style="font-size: 12px; color: var(--ink-3); margin-top: 2px;">Philippe Lançon</div>
+        <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: var(--ink-4);"><span style="font-family: var(--mono);">ÉPUB</span></div>
+      </div>
+      <div style="cursor: default;">
+        <div class="sif-cover" style="background: #4a2e2e; margin-bottom: 12px;">
+          <div class="sif-cover-format">PHYS</div>
+          <div class="sif-cover-title">Cent ans de solitude</div>
+          <div class="sif-cover-author">García Márquez</div>
+        </div>
+        <div style="font-family: var(--serif); font-size: 15px; font-weight: 500; line-height: 1.3;">Cent ans de solitude</div>
+        <div style="font-size: 12px; color: var(--ink-3); margin-top: 2px;">Gabriel García Márquez</div>
+        <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px;">
+          <span style="font-family: var(--mono); color: var(--ink-4);">PHYS</span>
+          <span style="color: var(--ink-4);">·</span>
+          <div class="sif-avatar sif-avatar--sm" style="background:#7a4a2e;">ML</div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="ds-sub-h">ListRow — vue liste</h3>
+    <div class="ds-card" style="padding: 0; overflow: hidden;">
+      <div style="display: grid; grid-template-columns: 60px 1fr 200px; gap: 16px; padding: 12px 16px; align-items: center; border-bottom: 1px solid var(--rule-2);">
+        <div class="sif-cover" style="height: 44px; aspect-ratio: 2/3; background: #3d2f17; padding: 0;"><div></div></div>
+        <div>
+          <div style="font-family: var(--serif); font-size: 16px; font-weight: 500;">Le Lambeau</div>
+          <div style="font-size: 12px; color: var(--ink-3);">Philippe Lançon · 2018</div>
+        </div>
+        <div style="font-size: 13px; color: var(--ink-3);">Bibliothèque commune</div>
+      </div>
+      <div style="display: grid; grid-template-columns: 60px 1fr 200px; gap: 16px; padding: 12px 16px; align-items: center;">
+        <div class="sif-cover" style="height: 44px; aspect-ratio: 2/3; background: #4a2e2e; padding: 0;"><div></div></div>
+        <div>
+          <div style="font-family: var(--serif); font-size: 16px; font-weight: 500;">Cent ans de solitude</div>
+          <div style="font-size: 12px; color: var(--ink-3);">Gabriel García Márquez · 1967</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="sif-avatar sif-avatar--sm" style="background:#7a4a2e;">ML</div>
+          <span style="font-size: 13px;">Marie</span>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="ds-sub-h">Shelf — étagère d'utilisateur</h3>
+    <div class="ds-card">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <div class="sif-avatar sif-avatar--lg" style="background:#7a4a2e;">ML</div>
+        <div>
+          <div style="font-family: var(--serif); font-size: 18px; font-weight: 500;">Marie Lefèvre</div>
+          <div style="font-size: 12px; color: var(--ink-3);">Paris 19ᵉ · 12 livres physiques</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); padding-top: 8px; border-top: 1px solid var(--rule); padding: 12px 0; overflow-x: auto;">
+        <div class="sif-cover" style="width: 60px; flex-shrink: 0; background: #3d2f17; padding: 4px; gap: 0;"><div style="font-family: var(--serif); font-size: 8px; color: rgba(245,241,232,.95); margin-top: auto;">Cent ans</div></div>
+        <div class="sif-cover" style="width: 60px; flex-shrink: 0; background: #4a2e2e; padding: 4px; gap: 0;"><div style="font-family: var(--serif); font-size: 8px; color: rgba(245,241,232,.95); margin-top: auto;">L'Étranger</div></div>
+        <div class="sif-cover" style="width: 60px; flex-shrink: 0; background: #2e3d4a; padding: 4px; gap: 0;"><div style="font-family: var(--serif); font-size: 8px; color: rgba(245,241,232,.95); margin-top: auto;">Le Lambeau</div></div>
+        <div class="sif-cover" style="width: 60px; flex-shrink: 0; background: #3a4a2e; padding: 4px; gap: 0;"><div style="font-family: var(--serif); font-size: 8px; color: rgba(245,241,232,.95); margin-top: auto;">Mille plat.</div></div>
+        <div class="sif-cover" style="width: 60px; flex-shrink: 0; background: #5a3a1f; padding: 4px; gap: 0;"><div style="font-family: var(--serif); font-size: 8px; color: rgba(245,241,232,.95); margin-top: auto;">L'œuvre…</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="navigation">
+    <div class="ds-section-h">
+      <span class="ds-section-num">14</span>
+      <h2>Navigation</h2>
+    </div>
+
+    <h3 class="ds-sub-h">Sidebar</h3>
+    <p class="ds-sub-desc">Largeur fixe 248px. Sticky sous le topbar 56px. Item actif marqué par un fond <code>--accent-soft</code> et une barre <code>--accent</code> à gauche. Le bloc profil/paramètres reste collé en bas grâce à <code>margin-top: auto</code>.</p>
+
+    <div style="display: grid; grid-template-columns: 248px 1fr; gap: 32px;">
+      <div style="background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 20px 12px; height: 360px; display: flex; flex-direction: column;">
+        <div style="font-family: var(--serif); font-size: 22px; font-weight: 600; padding: 0 10px; margin-bottom: 18px;">Sifriya</div>
+
+        <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-4); padding: 0 10px; margin: 8px 0 6px;">Bibliothèque</div>
+        <div style="padding: 8px 10px; border-radius: 4px; font-size: 14px; position: relative; background: var(--accent-soft); color: #5a4711; font-weight: 500;">
+          <div style="position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; background: var(--accent); border-radius: 0 2px 2px 0;"></div>
+          Catalogue
+        </div>
+        <div style="padding: 8px 10px; border-radius: 4px; font-size: 14px;">Communauté</div>
+        <div style="padding: 8px 10px; border-radius: 4px; font-size: 14px;">Recherche</div>
+
+        <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-4); padding: 0 10px; margin: 18px 0 6px;">Échanges</div>
+        <div style="padding: 8px 10px; border-radius: 4px; font-size: 14px;">Prêts <span class="sif-pill" style="margin-left: 6px; height: 18px; padding: 0 6px; font-size: 10px;">3</span></div>
+        <div style="padding: 8px 10px; border-radius: 4px; font-size: 14px;">Ajouter un livre</div>
+
+        <div style="margin-top: auto; padding: 12px 10px; border-top: 1px solid var(--rule); display: flex; align-items: center; gap: 10px;">
+          <div class="sif-avatar sif-avatar--sm" style="background:#7a4a2e;">SR</div>
+          <div style="font-size: 12px;"><div style="font-weight: 500;">Sarah Roux</div><div style="color: var(--ink-3); font-size: 11px;">Paramètres</div></div>
+        </div>
+      </div>
+
+      <div>
+        <h4 style="font-family: var(--serif); font-size: 18px; margin-bottom: 12px;">Règles</h4>
+        <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.7; color: var(--ink-2);">
+          <li>Maximum 2 niveaux. Pas de menus déroulants dans la sidebar.</li>
+          <li>Items groupés par 2 à 4 sous des eyebrow (Bibliothèque · Échanges · Compte).</li>
+          <li>Les compteurs (3 demandes) sont des pills, pas des badges rouges.</li>
+          <li>Le bloc profil est en bas (margin-top: auto), jamais superposé au reste.</li>
+          <li>Sur tactile/mobile : bottom tab bar à 5 items, même hiérarchie aplatie.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 class="ds-sub-h">Topbar</h3>
+    <p class="ds-sub-desc">56px de haut. Recherche centrée (max 480px), actions à droite. Pas de breadcrumb — la sidebar suffit.</p>
+    <div style="background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; height: 56px; display: flex; align-items: center; padding: 0 24px; gap: 24px;">
+      <div style="font-family: var(--serif); font-size: 18px; font-weight: 600;">Catalogue</div>
+      <input class="sif-input" placeholder="Rechercher un titre, un auteur, un membre…" style="max-width: 480px; margin-left: auto; margin-right: auto;" />
+      <button class="sif-btn sif-btn--secondary sif-btn--sm">Filtrer</button>
+      <button class="sif-btn sif-btn--primary sif-btn--sm"><svg class="ico" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ajouter</button>
+    </div>
+
+    <h3 class="ds-sub-h">Tabs</h3>
+    <div class="ds-card" style="padding: 0;">
+      <div style="display: flex; gap: 0; border-bottom: 1px solid var(--rule); padding: 0 24px;">
+        <div style="padding: 14px 16px; font-size: 13px; font-weight: 500; border-bottom: 2px solid var(--accent); color: var(--ink); margin-bottom: -1px;">Reçues <span style="background: var(--accent); color: var(--accent-ink); border-radius: 10px; padding: 1px 6px; font-size: 11px; margin-left: 4px;">3</span></div>
+        <div style="padding: 14px 16px; font-size: 13px; color: var(--ink-3);">Mes demandes</div>
+        <div style="padding: 14px 16px; font-size: 13px; color: var(--ink-3);">En cours</div>
+        <div style="padding: 14px 16px; font-size: 13px; color: var(--ink-3);">Historique</div>
+      </div>
+      <div style="padding: 24px; color: var(--ink-3); font-size: 13px;">Contenu de l'onglet…</div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="feedback">
+    <div class="ds-section-h">
+      <span class="ds-section-num">15</span>
+      <h2>Modales &amp; feedback</h2>
+    </div>
+
+    <p class="ds-sub-desc">Modales centrées, max-width 520px (formulaire) ou 720px (détail). Backdrop <code>rgba(31,27,19,.45)</code>. Toujours un bouton de fermeture explicite + click backdrop.</p>
+
+    <div class="ds-card" style="padding: 0; overflow: hidden;">
+      <div style="background: rgba(31,27,19,.45); padding: 40px;">
+        <div style="background: var(--paper); border-radius: 10px; padding: 28px; max-width: 520px; margin: 0 auto; box-shadow: var(--shadow-2);">
+          <div style="display: flex; align-items: start; gap: 16px;">
+            <div class="sif-cover" style="width: 80px; flex-shrink: 0; background: #4a2e2e;"><div class="sif-cover-format">PHYS</div><div class="sif-cover-title">Cent ans</div></div>
+            <div>
+              <h3 style="font-family: var(--serif); font-size: 22px; font-weight: 500; margin-bottom: 4px;">Demander à emprunter</h3>
+              <div style="font-size: 13px; color: var(--ink-3);">Cent ans de solitude — appartient à <b style="color: var(--ink-2);">Marie Lefèvre</b></div>
+            </div>
+          </div>
+          <textarea class="sif-input sif-textarea" placeholder="Un mot pour Marie (optionnel)" style="margin-top: 20px;"></textarea>
+          <div style="display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end;">
+            <button class="sif-btn sif-btn--ghost">Annuler</button>
+            <button class="sif-btn sif-btn--primary">Envoyer la demande</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="ds-sub-h">Bandeaux d'état (in-page)</h3>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(74,107,62,.08); border-radius: 8px; color: var(--ok); font-size: 13px;">
+        <svg class="ico" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Édition sélectionnée — informations pré-remplies
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(168,106,31,.10); border-radius: 8px; color: var(--warn); font-size: 13px;">
+        <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Ce livre est actuellement emprunté par Pierre — disponible le 28 mai.
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(138,48,48,.06); border-radius: 8px; color: var(--err); font-size: 13px;">
+        <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Cet ISBN ne correspond à aucun livre. Vérifiez les chiffres ou saisissez manuellement.
+      </div>
+    </div>
+    <p class="ds-sub-desc" style="margin-top: 16px;">Pas de toast disparaissant. Pour les confirmations légères (« demande envoyée »), un bandeau persistant en haut de la page qui reste 6s puis se replie. Important : pas de notifications push sonores.</p>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="layout">
+    <div class="ds-section-h">
+      <span class="ds-section-num">16</span>
+      <h2>Layouts d'écran</h2>
+    </div>
+
+    <p class="ds-sub-desc">Tous les écrans suivent la même structure : <code>topbar 56</code> + <code>sidebar 248</code> + <code>main</code>. Le main est limité à <code>max-width: 1280px</code>, padding horizontal <code>40px</code>. Sur tactile : sidebar → bottom tab bar 64px, topbar reste.</p>
+
+    <div class="ds-pattern">
+      <div class="ds-pattern-h">
+        <h4>Écran de liste (Catalogue, Communauté, Recherche)</h4>
+        <span class="meta">topbar + sidebar + page header + filtres + grille/liste</span>
+      </div>
+      <div class="ds-pattern-body">
+        <div style="background: var(--paper); border-radius: 8px; overflow: hidden;">
+          <div style="height: 36px; background: var(--paper-2); border-bottom: 1px solid var(--rule); padding: 0 14px; display: flex; align-items: center; font-size: 11px; color: var(--ink-3); font-family: var(--mono);">topbar 56</div>
+          <div style="display: grid; grid-template-columns: 160px 1fr;">
+            <div style="background: var(--paper-2); padding: 14px; height: 320px; font-size: 11px; color: var(--ink-3); font-family: var(--mono); border-right: 1px solid var(--rule);">sidebar 248</div>
+            <div style="padding: 24px;">
+              <div style="font-family: var(--serif); font-size: 24px;">Catalogue</div>
+              <div style="font-size: 12px; color: var(--ink-3); margin-bottom: 16px;">86 livres · 12 numériques · 74 physiques</div>
+              <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                <div style="height: 28px; background: var(--paper-2); border-radius: 4px; padding: 0 12px; display: flex; align-items: center; font-size: 11px;">Tous formats</div>
+                <div style="height: 28px; background: var(--paper-2); border-radius: 4px; padding: 0 12px; display: flex; align-items: center; font-size: 11px;">Tous genres</div>
+                <div style="height: 28px; background: var(--paper-2); border-radius: 4px; padding: 0 12px; display: flex; align-items: center; font-size: 11px; margin-left: auto;">Trier</div>
+                <div style="height: 28px; background: var(--paper-2); border-radius: 4px; padding: 0 8px; display: flex; align-items: center; font-size: 11px;">Liste</div>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;">
+                <div class="sif-cover" style="background: #3d2f17;"><div class="sif-cover-format">PHYS</div><div class="sif-cover-title" style="font-size: 10px;">A</div></div>
+                <div class="sif-cover" style="background: #4a2e2e;"><div class="sif-cover-format">EPUB</div><div class="sif-cover-title" style="font-size: 10px;">B</div></div>
+                <div class="sif-cover" style="background: #2e3d4a;"><div class="sif-cover-format">PHYS</div><div class="sif-cover-title" style="font-size: 10px;">C</div></div>
+                <div class="sif-cover" style="background: #3a4a2e;"><div class="sif-cover-format">EPUB</div><div class="sif-cover-title" style="font-size: 10px;">D</div></div>
+                <div class="sif-cover" style="background: #5a3a1f;"><div class="sif-cover-format">PHYS</div><div class="sif-cover-title" style="font-size: 10px;">E</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ds-pattern">
+      <div class="ds-pattern-h">
+        <h4>Écran de détail (Fiche livre, Profil)</h4>
+        <span class="meta">colonne couverture + colonne metadata + actions sticky</span>
+      </div>
+      <div class="ds-pattern-body">
+        <div style="background: var(--paper); border-radius: 8px; padding: 32px;">
+          <div style="display: grid; grid-template-columns: 240px 1fr; gap: 40px;">
+            <div>
+              <div class="sif-cover" style="background: #4a2e2e;"><div class="sif-cover-format">PHYS</div><div class="sif-cover-title">Cent ans de solitude</div><div class="sif-cover-author">García Márquez</div></div>
+              <button class="sif-btn sif-btn--primary sif-btn--lg" style="width: 100%; margin-top: 16px; justify-content: center;">Demander à emprunter</button>
+              <button class="sif-btn sif-btn--secondary" style="width: 100%; margin-top: 8px; justify-content: center;">Marquer à lire</button>
+            </div>
+            <div>
+              <div style="font-size: 12px; color: var(--ink-3); margin-bottom: 6px;">Roman · 1967</div>
+              <h2 style="font-family: var(--serif); font-size: 36px; font-weight: 400; line-height: 1.1; margin-bottom: 4px;">Cent ans de solitude</h2>
+              <div style="font-family: var(--serif); font-size: 18px; color: var(--ink-2); margin-bottom: 20px;">Gabriel García Márquez</div>
+              <div style="display: flex; gap: 8px; margin-bottom: 24px;">
+                <span class="sif-pill">Physique</span>
+                <span class="sif-pill sif-pill--ok">Disponible</span>
+                <span class="sif-pill">437 pages</span>
+              </div>
+              <div style="font-family: var(--serif); font-size: 16px; line-height: 1.6; color: var(--ink-2); max-width: 560px;">L'épopée de la famille Buendía sur sept générations à Macondo, ce village fondé au cœur de la Colombie, est un des grands romans du xxᵉ siècle…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ds-pattern">
+      <div class="ds-pattern-h">
+        <h4>Liseuse — plein écran</h4>
+        <span class="meta">topbar minimal + colonne de texte centrée + sidebar contextuelle</span>
+      </div>
+      <div class="ds-pattern-body">
+        <div style="background: #faf7ef; border-radius: 8px; min-height: 240px; padding: 32px; position: relative;">
+          <div style="display: flex; justify-content: space-between; font-family: var(--serif); font-size: 12px; color: var(--ink-3); margin-bottom: 24px;">
+            <span>Le Lambeau · Chapitre 3</span>
+            <span style="display: flex; gap: 16px;"><span>Aa</span><span>☰</span><span>⚙︎</span></span>
+          </div>
+          <div style="max-width: 560px; margin: 0 auto; font-family: var(--serif); font-size: 17px; line-height: 1.7; color: var(--ink);">
+            « Le silence après l'attaque avait l'épaisseur d'une cathédrale. Je me souviens du froid sur ma joue, de la lumière qui ne ressemblait plus à de la lumière, de cette manière qu'ont les choses, parfois, de cesser brusquement d'avoir un nom. »
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 32px; font-family: var(--serif); font-size: 12px; color: var(--ink-3);">
+            <span>34 / 412</span><span>8 %</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="listes">
+    <div class="ds-section-h">
+      <span class="ds-section-num">17</span>
+      <h2>Listes &amp; étagères</h2>
+    </div>
+
+    <h3 class="ds-sub-h">Quand utiliser quoi</h3>
+    <table class="ds-table">
+      <thead><tr><th>Pattern</th><th>Quand</th><th>Densité</th></tr></thead>
+      <tbody>
+        <tr><td><b>Grille de cards</b></td><td>Découverte, parcours visuel (Catalogue, Communauté)</td><td>4–6 colonnes en desktop, 2 en tactile</td></tr>
+        <tr><td><b>Liste compacte</b></td><td>Tri, recherche, opérations (Prêts, Historique)</td><td>1 colonne, hauteur ligne 60px</td></tr>
+        <tr><td><b>Étagère horizontale</b></td><td>Collection d'un membre, série, recommandations</td><td>Scroll horizontal, vignettes 60–80px</td></tr>
+        <tr><td><b>Tableau</b></td><td>Données (admin, statistiques) — usage rare</td><td>Réservé aux écrans paramètres</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="ds-sub-h">État vide</h3>
+    <p class="ds-sub-desc">Toujours un état vide explicite : pas de page blanche, pas d'illustration mascotte. Une phrase qui explique, et le bouton de l'action attendue.</p>
+    <div class="ds-card" style="text-align: center; padding: 60px 24px;">
+      <div style="font-family: var(--serif); font-size: 22px; margin-bottom: 8px;">Votre étagère est vide.</div>
+      <div style="font-size: 14px; color: var(--ink-3); margin-bottom: 24px; max-width: 360px; margin-left: auto; margin-right: auto;">Ajoutez votre premier livre — numérique en glissant un fichier, ou physique avec son ISBN.</div>
+      <button class="sif-btn sif-btn--primary"><svg class="ico" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ajouter un livre</button>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="flux">
+    <div class="ds-section-h">
+      <span class="ds-section-num">18</span>
+      <h2>Flux &amp; demandes</h2>
+    </div>
+
+    <h3 class="ds-sub-h">États d'un prêt</h3>
+    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 24px; background: var(--paper); border: 1px solid var(--rule); border-radius: 8px;">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <span class="sif-pill sif-pill--warn">Demandée</span>
+        <div style="font-size: 11px; color: var(--ink-3); font-family: var(--mono);">pending</div>
+      </div>
+      <span style="color: var(--ink-4);">→</span>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <span class="sif-pill sif-pill--accent">Acceptée</span>
+        <div style="font-size: 11px; color: var(--ink-3); font-family: var(--mono);">accepted</div>
+      </div>
+      <span style="color: var(--ink-4);">→</span>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <span class="sif-pill sif-pill--ok">En cours</span>
+        <div style="font-size: 11px; color: var(--ink-3); font-family: var(--mono);">active</div>
+      </div>
+      <span style="color: var(--ink-4);">→</span>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <span class="sif-pill">Rendue</span>
+        <div style="font-size: 11px; color: var(--ink-3); font-family: var(--mono);">returned</div>
+      </div>
+    </div>
+    <p class="ds-sub-desc" style="margin-top: 12px;">Embranchement possibles : refus (pending → declined) et annulation (pending/accepted → canceled). Les états terminaux apparaissent dans l'historique uniquement.</p>
+
+    <h3 class="ds-sub-h">Notifications</h3>
+    <p class="ds-sub-desc">Une seule pastille de compteur dans la sidebar (item Prêts), pas de cloche globale. Mail récap quotidien optionnel pour ne pas obliger les membres à ouvrir l'app.</p>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="themes">
+    <div class="ds-section-h">
+      <span class="ds-section-num">19</span>
+      <h2>Thèmes</h2>
+    </div>
+
+    <p class="ds-sub-desc">Un seul thème de marque — papier crème + accent doré. Les autres « ambiances » dans Tweaks (bordeaux, vert, bleu) ne changent que <code>--accent</code>. Les modes liseuse (jour, sépia, nuit) sont contextuels et ne s'appliquent qu'à la liseuse.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+      <div style="background: #faf7ef; border: 1px solid var(--rule); border-radius: 10px; padding: 24px; min-height: 160px;">
+        <div style="font-family: var(--serif); font-size: 16px; color: #1f1b13; margin-bottom: 8px;">Mode jour</div>
+        <div style="font-family: var(--serif); font-size: 13px; line-height: 1.6; color: #1f1b13;">Le silence après l'attaque avait l'épaisseur d'une cathédrale.</div>
+      </div>
+      <div style="background: #f4ecd8; border: 1px solid var(--rule); border-radius: 10px; padding: 24px; min-height: 160px;">
+        <div style="font-family: var(--serif); font-size: 16px; color: #5a3a1f; margin-bottom: 8px;">Mode sépia</div>
+        <div style="font-family: var(--serif); font-size: 13px; line-height: 1.6; color: #5a3a1f;">Le silence après l'attaque avait l'épaisseur d'une cathédrale.</div>
+      </div>
+      <div style="background: #1a1814; border: 1px solid #2a2620; border-radius: 10px; padding: 24px; min-height: 160px;">
+        <div style="font-family: var(--serif); font-size: 16px; color: #c8c0a8; margin-bottom: 8px;">Mode nuit</div>
+        <div style="font-family: var(--serif); font-size: 13px; line-height: 1.6; color: #c8c0a8;">Le silence après l'attaque avait l'épaisseur d'une cathédrale.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="tokens">
+    <div class="ds-section-h">
+      <span class="ds-section-num">20</span>
+      <h2>Tokens — récap exportable</h2>
+    </div>
+
+    <p class="ds-sub-desc">À copier tel quel dans <code>tokens.css</code> ou à transformer en thème Tailwind / Stitches / Tamagui.</p>
+
+    <div class="ds-code"><pre style="margin: 0;"><span class="com">/* Sifriya — design tokens */</span>
+<span class="key">:root</span> {
+  <span class="com">/* Surfaces */</span>
+  --paper:        <span class="val">#f5f1e8</span>;
+  --paper-2:      <span class="val">#ede7d8</span>;
+  --paper-3:      <span class="val">#e3dcc8</span>;
+  --paper-up:     <span class="val">#faf7ef</span>;  <span class="com">/* liseuse jour */</span>
+
+  <span class="com">/* Encres */</span>
+  --ink:          <span class="val">#1f1b13</span>;
+  --ink-2:        <span class="val">#3a342a</span>;
+  --ink-3:        <span class="val">#6b6354</span>;
+  --ink-4:        <span class="val">#9a9180</span>;
+  --rule:         <span class="val">rgba(31,27,19,.12)</span>;
+  --rule-2:       <span class="val">rgba(31,27,19,.06)</span>;
+
+  <span class="com">/* Accent &amp; sémantique */</span>
+  --accent:       <span class="val">#8a6b1f</span>;
+  --accent-ink:   <span class="val">#faf7ef</span>;
+  --accent-soft:  <span class="val">#e8dcb8</span>;
+  --ok:           <span class="val">#4a6b3e</span>;
+  --warn:         <span class="val">#a86a1f</span>;
+  --err:          <span class="val">#8a3030</span>;
+
+  <span class="com">/* Type */</span>
+  --serif:  <span class="val">"Source Serif 4", Georgia, serif</span>;
+  --sans:   <span class="val">"Inter", system-ui, sans-serif</span>;
+  --mono:   <span class="val">"JetBrains Mono", ui-monospace, monospace</span>;
+
+  <span class="com">/* Échelle de taille */</span>
+  --fs-xs:   <span class="val">12px</span>;
+  --fs-sm:   <span class="val">13px</span>;
+  --fs-base: <span class="val">14px</span>;
+  --fs-md:   <span class="val">15px</span>;
+  --fs-lg:   <span class="val">17px</span>;
+  --fs-xl:   <span class="val">22px</span>;
+  --fs-2xl:  <span class="val">30px</span>;
+  --fs-3xl:  <span class="val">44px</span>;
+  --fs-4xl:  <span class="val">56px</span>;
+
+  <span class="com">/* Espacement */</span>
+  --space-1: <span class="val">4px</span>;
+  --space-2: <span class="val">8px</span>;
+  --space-3: <span class="val">12px</span>;
+  --space-4: <span class="val">16px</span>;
+  --space-6: <span class="val">24px</span>;
+  --space-8: <span class="val">32px</span>;
+  --space-12: <span class="val">48px</span>;
+  --space-16: <span class="val">64px</span>;
+
+  <span class="com">/* Densité (modifiable via Tweaks) */</span>
+  --row-h:     <span class="val">44px</span>;
+  --pad:       <span class="val">16px</span>;
+  --gap:       <span class="val">16px</span>;
+  --radius:    <span class="val">6px</span>;
+  --radius-lg: <span class="val">10px</span>;
+
+  <span class="com">/* Élévation */</span>
+  --shadow-1: <span class="val">0 1px 0 rgba(255,255,255,.4) inset, 0 1px 2px rgba(31,27,19,.06)</span>;
+  --shadow-2: <span class="val">0 1px 0 rgba(255,255,255,.5) inset, 0 6px 24px rgba(31,27,19,.10)</span>;
+  --shadow-book: <span class="val">0 1px 1px rgba(31,27,19,.15), 0 8px 18px rgba(31,27,19,.18)</span>;
+}</pre></div>
+  </section>
+
+  <!-- ============================================ -->
+  <section class="ds-section" id="a11y">
+    <div class="ds-section-h">
+      <span class="ds-section-num">21</span>
+      <h2>Accessibilité</h2>
+    </div>
+
+    <ul style="font-size: 14px; line-height: 1.8; color: var(--ink-2); padding-left: 20px; max-width: 720px;">
+      <li>Contrastes minimum AA (4.5:1) sur tous les textes ≥ 14px ; AAA sur le corps de la liseuse.</li>
+      <li>Cibles tactiles ≥ 44×44px sur tous les boutons/icônes interactifs.</li>
+      <li>Focus visible : ring <code>3px rgba(31,27,19,.05)</code> + bordure <code>--ink-3</code>. Jamais <code>outline: none</code> sans alternative.</li>
+      <li>Police <b>Atkinson Hyperlegible</b> disponible dans la liseuse pour les troubles de la vision et la dyslexie.</li>
+      <li>Tailles de police de la liseuse réglables de 14 à 28px ; espacement de ligne de 1.4 à 2.0.</li>
+      <li>Tous les flux clés réalisables au clavier (Tab, Entrée, Échap). Modales : focus trap + Échap pour fermer.</li>
+      <li><code>prefers-reduced-motion</code> respecté : transitions désactivées, pas d'animation décorative.</li>
+      <li>Texte alternatif sur toutes les couvertures : titre + auteur. Les avatars : nom complet en aria-label.</li>
+      <li>Mode nuit liseuse : pas de noir pur (#000) ni blanc pur (#FFF) — réduit la fatigue.</li>
+    </ul>
+  </section>
+
+  <p style="font-size: 12px; color: var(--ink-4); margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--rule);">
+    Sifriya · Design System · v1.0 — préparé pour le développement Claude Code.
+  </p>
+</main>
+</div>
+
+</body>
+</html>

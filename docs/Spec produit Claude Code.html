@@ -1,0 +1,1074 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Sifriya — Spec produit pour Claude Code</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,500;8..60,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper:  #f5f1e8;
+    --paper-2:#ede7d8;
+    --paper-3:#e3dcc8;
+    --ink:    #1f1b13;
+    --ink-2:  #3a342a;
+    --ink-3:  #6b6354;
+    --ink-4:  #9a9180;
+    --rule:   rgba(31,27,19,.12);
+    --rule-2: rgba(31,27,19,.06);
+    --accent: #8a6b1f;
+    --accent-soft: #e8dcb8;
+    --ok:     #4a6b3e;
+    --warn:   #a86a1f;
+    --err:    #8a3030;
+    --serif: "Source Serif 4", Georgia, serif;
+    --sans: "Inter", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  *,*::before,*::after { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .doc {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 80px 56px 120px;
+  }
+  .doc-header {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 32px;
+    margin-bottom: 48px;
+  }
+  .doc-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: 56px;
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    margin: 0 0 16px;
+  }
+  .lede {
+    font-family: var(--serif);
+    font-size: 19px;
+    line-height: 1.55;
+    color: var(--ink-2);
+    font-weight: 300;
+    max-width: 640px;
+  }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 32px;
+  }
+  .meta-card {
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 14px 16px;
+    background: var(--paper);
+  }
+  .meta-card .k {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-3);
+    margin-bottom: 4px;
+  }
+  .meta-card .v { font-size: 14px; font-weight: 500; }
+
+  h2 {
+    font-family: var(--serif);
+    font-size: 32px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    margin: 72px 0 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+    display: flex; align-items: baseline; gap: 16px;
+  }
+  h2 .num {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-4);
+    font-weight: 400;
+  }
+  h3 {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    margin: 36px 0 6px;
+  }
+  h4 {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 24px 0 8px;
+  }
+  p { margin: 0 0 14px; color: var(--ink-2); }
+  ul, ol { padding-left: 22px; margin: 0 0 16px; }
+  li { color: var(--ink-2); margin-bottom: 6px; }
+  li::marker { color: var(--ink-4); }
+  strong, b { color: var(--ink); font-weight: 600; }
+  code {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--paper-2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+  pre {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--paper-2);
+    border: 1px solid var(--rule);
+    padding: 16px 18px;
+    border-radius: 6px;
+    overflow-x: auto;
+    line-height: 1.55;
+    margin: 0 0 18px;
+  }
+  pre code { padding: 0; background: transparent; font-size: 12.5px; }
+
+  .callout {
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 18px 0;
+    font-size: 14px;
+    border: 1px solid;
+    line-height: 1.55;
+  }
+  .callout.note { background: var(--paper-2); border-color: var(--rule); color: var(--ink-2); }
+  .callout.ok { background: rgba(74,107,62,.08); border-color: rgba(74,107,62,.25); color: var(--ok); }
+  .callout.warn { background: rgba(168,106,31,.10); border-color: rgba(168,106,31,.25); color: var(--warn); }
+  .callout b { color: inherit; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 12px 0 24px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--rule-2);
+    vertical-align: top;
+  }
+  th {
+    font-weight: 500;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper-2);
+  }
+  td code { font-size: 12px; }
+
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--paper-2);
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-right: 4px;
+  }
+  .pill.ok { background: rgba(74,107,62,.12); color: var(--ok); }
+  .pill.warn { background: rgba(168,106,31,.14); color: var(--warn); }
+  .pill.accent { background: var(--accent-soft); color: #5a4711; }
+
+  .toc {
+    background: var(--paper-2);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 20px 28px;
+    margin-bottom: 56px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 28px;
+  }
+  .toc a {
+    font-size: 13px;
+    color: var(--ink-2);
+    text-decoration: none;
+    padding: 4px 0;
+    display: block;
+    border-bottom: 1px dotted transparent;
+  }
+  .toc a:hover { border-bottom-color: var(--ink-3); color: var(--ink); }
+  .toc .num { font-family: var(--mono); color: var(--ink-4); margin-right: 8px; font-size: 11px; }
+
+  .screen-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin: 16px 0 24px;
+  }
+  .screen-card {
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 16px 18px;
+    background: var(--paper);
+  }
+  .screen-card .route {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .screen-card h5 {
+    font-family: var(--serif);
+    font-size: 17px;
+    font-weight: 500;
+    margin: 0 0 6px;
+  }
+  .screen-card p {
+    font-size: 12.5px;
+    color: var(--ink-3);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .stack-card {
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 14px 16px;
+    background: var(--paper);
+  }
+  .stack-card .layer {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-3);
+    margin-bottom: 4px;
+  }
+  .stack-card .pick {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .stack-card .why {
+    font-size: 12.5px;
+    color: var(--ink-3);
+    line-height: 1.5;
+  }
+
+  .api-list { margin: 12px 0 24px; }
+  .api-item {
+    display: grid;
+    grid-template-columns: 70px 1fr;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule-2);
+    align-items: baseline;
+  }
+  .api-item .verb {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-align: right;
+    padding-top: 1px;
+  }
+  .api-item .verb.GET { color: var(--ok); }
+  .api-item .verb.POST { color: var(--accent); }
+  .api-item .verb.PATCH { color: var(--warn); }
+  .api-item .verb.DELETE { color: var(--err); }
+  .api-item .path {
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .api-item .desc {
+    font-size: 12.5px;
+    color: var(--ink-3);
+    margin-top: 2px;
+  }
+
+  /* Phase boxes */
+  .phase {
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+    background: var(--paper);
+  }
+  .phase .title-row {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
+  .phase .num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .phase h4 {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--ink);
+    text-transform: none;
+    letter-spacing: 0;
+    margin: 0;
+  }
+  .phase .duration {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--ink-3);
+    font-family: var(--mono);
+  }
+  .phase ul { margin-bottom: 0; }
+  .phase li { font-size: 13.5px; }
+</style>
+</head>
+<body>
+
+<main class="doc">
+
+  <header class="doc-header">
+    <div class="doc-eyebrow">Spec produit · Handoff Claude Code</div>
+    <h1>Sifriya</h1>
+    <p class="lede">Une bibliothèque partagée entre proches — pour ranger ses livres numériques, prêter ses livres physiques et lire dans l'app, sans bruit ni gamification.</p>
+
+    <div class="meta-grid">
+      <div class="meta-card"><div class="k">Type</div><div class="v">App web responsive</div></div>
+      <div class="meta-card"><div class="k">Audience</div><div class="v">20–80 ans</div></div>
+      <div class="meta-card"><div class="k">Langue</div><div class="v">FR (i18n-ready)</div></div>
+      <div class="meta-card"><div class="k">Échelle</div><div class="v">Cercles 5–50 membres</div></div>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="#vision"><span class="num">01</span>Vision &amp; promesse</a>
+    <a href="#users"><span class="num">02</span>Utilisateurs &amp; cas d'usage</a>
+    <a href="#modele"><span class="num">03</span>Modèle de données</a>
+    <a href="#ecrans"><span class="num">04</span>Écrans &amp; routes</a>
+    <a href="#parcours"><span class="num">05</span>Parcours clés</a>
+    <a href="#regles"><span class="num">06</span>Règles métier</a>
+    <a href="#api"><span class="num">07</span>API REST</a>
+    <a href="#stack"><span class="num">08</span>Stack technique</a>
+    <a href="#archi"><span class="num">09</span>Architecture</a>
+    <a href="#liseuse"><span class="num">10</span>Liseuse — détails</a>
+    <a href="#externes"><span class="num">11</span>Services externes</a>
+    <a href="#qualite"><span class="num">12</span>Qualité &amp; tests</a>
+    <a href="#roadmap"><span class="num">13</span>Roadmap MVP</a>
+    <a href="#nogo"><span class="num">14</span>Hors-scope &amp; non-objectifs</a>
+  </nav>
+
+  <!-- ========================================== -->
+  <section id="vision">
+    <h2><span class="num">01</span>Vision &amp; promesse</h2>
+
+    <p><strong>Sifriya</strong> (<em>bibliothèque</em> en hébreu) est une app de <strong>bibliothèque partagée privée</strong>. Un cercle d'utilisateurs — famille, amis, voisins — y mutualise :</p>
+
+    <ul>
+      <li>une <strong>bibliothèque numérique commune</strong> (ePub, PDF) lisible dans l'app ;</li>
+      <li>les <strong>étagères physiques</strong> de chacun, avec un système de <strong>demandes d'emprunt</strong> validées par le propriétaire.</li>
+    </ul>
+
+    <h3>La promesse en une phrase</h3>
+    <div class="callout note">
+      <em>« Sifriya, c'est l'étagère commune que vous n'avez jamais eue avec vos proches : un endroit calme, sans algorithme ni notifications, où chacun voit ce que les autres lisent et peut demander à emprunter. »</em>
+    </div>
+
+    <h3>Pourquoi maintenant</h3>
+    <ul>
+      <li>Les apps de lecture grand public (Kindle, Kobo, Libby) sont fermées sur des écosystèmes commerciaux.</li>
+      <li>Les apps de gestion de bibliothèque (LibraryThing, Goodreads) sont publiques et orientées « collection ».</li>
+      <li>Aucune solution simple n'existe pour <strong>partager une bibliothèque entre 5–50 personnes de confiance</strong>.</li>
+    </ul>
+
+    <h3>Différenciateurs</h3>
+    <ul>
+      <li><strong>Privé par défaut</strong> — chaque cercle est invitation-only.</li>
+      <li><strong>Mixte numérique + physique</strong> — les deux formats coexistent dans le catalogue.</li>
+      <li><strong>Liseuse intégrée</strong> — pas besoin d'app tierce pour lire les ePub partagés.</li>
+      <li><strong>Sobriété</strong> — pas de gamification, pas de notifications agressives, pas de pub.</li>
+    </ul>
+  </section>
+
+  <!-- ========================================== -->
+  <section id="users">
+    <h2><span class="num">02</span>Utilisateurs &amp; cas d'usage</h2>
+
+    <h3>Trois personae</h3>
+
+    <h4>Marie · 34 ans · grande lectrice</h4>
+    <p>Possède 200+ livres physiques + une centaine d'ePub. Veut <strong>partager intelligemment</strong> avec son cercle, savoir qui a quoi, prêter sans perdre la trace.</p>
+
+    <h4>Pierre · 62 ans · retraité</h4>
+    <p>Lit beaucoup mais peu à l'aise avec la tech. A besoin d'une <strong>interface lisible et linéaire</strong>, sans surprises. Utilise surtout la liseuse et les emprunts.</p>
+
+    <h4>Sarah · 28 ans · curieuse</h4>
+    <p>Découvre des livres via ses proches. Veut <strong>parcourir les étagères des autres</strong>, demander à emprunter, télécharger les numériques.</p>
+
+    <h3>Top cas d'usage</h3>
+    <ol>
+      <li>Ajouter un livre physique en scannant son ISBN <em>(récupération auto des métadonnées)</em>.</li>
+      <li>Glisser un fichier ePub dans Sifriya pour l'ajouter à la bibliothèque commune.</li>
+      <li>Voir l'étagère de Marie et lui demander d'emprunter <em>L'Étranger</em>.</li>
+      <li>Accepter / refuser une demande d'emprunt et la suivre jusqu'au retour.</li>
+      <li>Lire un ePub de la bibliothèque commune dans l'app, en mode nuit, avec marque-pages.</li>
+      <li>Rechercher tous les livres d'un auteur, tous formats / propriétaires confondus.</li>
+    </ol>
+  </section>
+
+  <!-- ========================================== -->
+  <section id="modele">
+    <h2><span class="num">03</span>Modèle de données</h2>
+
+    <p>Six entités principales. Tout est rattaché à un <code>circle_id</code> (cercle d'utilisateurs).</p>
+
+    <h3>Schéma simplifié</h3>
+<pre><code>Circle
+  id, name, created_at
+  members[] → User
+
+User
+  id, circle_id, name, email, avatar_color, location, role
+  // role: "owner" | "member"
+
+Book
+  id, circle_id, format, title, author, year, pages, genre, cover_url, isbn
+  // format: "epub" | "pdf" | "physique"
+
+  -- si format = "physique" :
+  owner_id, room, shelf_label
+
+  -- si format ≠ "physique" :
+  file_url, file_size, added_by_id
+  // possédé par "la bibliothèque commune", pas par un user
+
+  // état lecture (par user) → table séparée Reading
+  
+Reading
+  id, user_id, book_id
+  status, progress_percent, last_position_cfi, started_at, finished_at, rating
+  // status: "to_read" | "reading" | "finished"
+
+Loan
+  id, book_id, requester_id, owner_id
+  status, requested_at, accepted_at, started_at, returned_at
+  message_from_requester, message_from_owner
+  // status: "pending" | "accepted" | "active" | "returned" | "declined" | "canceled"
+
+Annotation
+  id, user_id, book_id
+  type, cfi_range, text_excerpt, note, color, created_at
+  // type: "bookmark" | "highlight" | "note"</code></pre>
+
+    <h3>Règles d'intégrité</h3>
+    <ul>
+      <li><strong>Un livre physique</strong> a toujours <code>owner_id</code> obligatoire ; les numériques ont <code>added_by_id</code> mais sont la propriété du cercle.</li>
+      <li><strong>Un livre physique</strong> ne peut être en <code>active</code> que pour <strong>un seul</strong> emprunteur à la fois.</li>
+      <li><strong>Un livre numérique</strong> n'a jamais d'emprunt — il est lisible/téléchargeable par tous les membres du cercle.</li>
+      <li>Suppression d'un livre = soft delete (<code>deleted_at</code>) pour conserver l'historique des prêts.</li>
+    </ul>
+
+    <h3>Volumes attendus (par cercle)</h3>
+    <table>
+      <thead><tr><th>Entité</th><th>Volume cible</th><th>Volume max</th></tr></thead>
+      <tbody>
+        <tr><td>Users</td><td>10–20</td><td>50</td></tr>
+        <tr><td>Books</td><td>200–500</td><td>5 000</td></tr>
+        <tr><td>Loans</td><td>20–100</td><td>illimité (historique)</td></tr>
+        <tr><td>Annotations</td><td>~30/lecture</td><td>illimité</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ========================================== -->
+  <section id="ecrans">
+    <h2><span class="num">04</span>Écrans &amp; routes</h2>
+
+    <p>8 écrans principaux + 2 modales globales. Toutes les routes sont relatives au cercle courant.</p>
+
+    <div class="screen-grid">
+      <div class="screen-card">
+        <div class="route">/</div>
+        <h5>Catalogue</h5>
+        <p>Tous les livres du cercle. Vue grille (cards) ou liste. Filtres : format, genre, propriétaire, statut. Tri : ajout, titre, auteur, année.</p>
+      </div>
+      <div class="screen-card">
+        <div class="route">/books/:id</div>
+        <h5>Fiche livre</h5>
+        <p>Couverture + métadonnées + actions selon format : « Lire » (numérique), « Demander à emprunter » (physique), « Télécharger ».</p>
+      </div>
+      <div class="screen-card">
+        <div class="route">/read/:bookId</div>
+        <h5>Liseuse</h5>
+        <p>Liseuse ePub plein écran. 3 thèmes (jour/sépia/nuit), 3 polices, taille texte, sommaire, marque-pages, surlignages, notes.</p>
+      </div>
+      <div class="screen-card">
+        <div class="route">/community</div>
+        <h5>Communauté</h5>
+        <p>Étagères physiques de chaque membre + statistiques de la bibliothèque commune.</p>
+      </div>
+      <div class="screen-card">
+        <div class="route">/loans</div>
+        <h5>Prêts</h5>
+        <p>4 onglets : Reçues · Mes demandes · En cours · Historique. Actions : accepter, refuser, marquer rendu.</p>
+      </div>
+      <div class="screen-card">
+        <div class="route">/add</div>
+        <h5>Ajouter un livre</h5>
+        <p>Choix format. Numérique : drop ePub/PDF + auto-détection. Physique : ISBN / titre+édition / manuel.</p>
+      </div>
+      <div class="screen-card">
+        <div class="route">/search</div>
+        <h5>Recherche</h5>
+        <p>Recherche unifiée : titre, auteur, genre, ISBN, membre. Résultats groupés par type.</p>
+      </div>
+      <div class="screen-card">
+        <div class="route">/me</div>
+        <h5>Profil &amp; paramètres</h5>
+        <p>Étagère personnelle, statistiques de lecture, préférences (densité, ambiance, polices liseuse), gestion du cercle.</p>
+      </div>
+    </div>
+
+    <h3>Modales globales</h3>
+    <ul>
+      <li><strong>LoanRequestModal</strong> — déclenchée depuis la fiche d'un livre physique.</li>
+      <li><strong>DownloadModal</strong> — déclenchée depuis la fiche d'un livre numérique (choix ePub/PDF).</li>
+    </ul>
+  </section>
+
+  <!-- ========================================== -->
+  <section id="parcours">
+    <h2><span class="num">05</span>Parcours clés</h2>
+
+    <h3>① Ajouter un livre physique par ISBN</h3>
+    <ol>
+      <li>L'utilisateur ouvre <code>/add</code>, choisit « Livre physique ».</li>
+      <li>Mode <strong>Par ISBN</strong> sélectionné par défaut.</li>
+      <li>Saisit son ISBN (10 ou 13 chiffres) → clic « Rechercher ».</li>
+      <li>Backend interroge <strong>Open Library + Google Books</strong>. Renvoie : titre, auteur, année, pages, éditeur, image de couverture.</li>
+      <li>Bandeau vert <em>« Édition trouvée — informations pré-remplies »</em>. Aperçu de couverture mise à jour.</li>
+      <li>L'utilisateur complète : pièce, étagère.</li>
+      <li>Clic « Ajouter à mon étagère » → POST <code>/books</code> → redirect <code>/books/:id</code>.</li>
+    </ol>
+
+    <h3>② Ajouter par titre (avec choix d'édition)</h3>
+    <ol>
+      <li>Mode <strong>Par titre</strong> sélectionné. Saisit « L'Étranger » → clic « Rechercher ».</li>
+      <li>Backend interroge Open Library en <em>search by title</em>, ramène N éditions distinctes.</li>
+      <li>Liste affichée : chaque édition avec éditeur, année, pages, ISBN, vignette.</li>
+      <li>Clic sur une édition → champs pré-remplis avec cette édition spécifique.</li>
+      <li>Suite identique au flux ISBN.</li>
+    </ol>
+
+    <h3>③ Ajouter un livre numérique</h3>
+    <ol>
+      <li>Drop d'un fichier <code>.epub</code> ou <code>.pdf</code> dans la zone.</li>
+      <li>Backend extrait les métadonnées de <strong>l'ePub OPF</strong> (titre, auteur, langue, publisher, cover image).</li>
+      <li>Champs pré-remplis. L'utilisateur peut éditer.</li>
+      <li>Clic « Ajouter à la bibliothèque » → POST <code>/books</code> + upload du fichier.</li>
+      <li>Le livre est ajouté à la bibliothèque commune (pas d'<code>owner_id</code>).</li>
+    </ol>
+
+    <h3>④ Demande d'emprunt</h3>
+    <ol>
+      <li>Sarah ouvre la fiche de <em>Cent ans de solitude</em> (physique, owner = Marie).</li>
+      <li>Clic « Demander à emprunter » → modale avec message optionnel.</li>
+      <li>POST <code>/loans</code> { book_id, message } → status <code>pending</code>.</li>
+      <li>Marie voit la demande dans <code>/loans</code> onglet « Reçues » (badge sidebar +1).</li>
+      <li>Marie clique « Accepter » → PATCH <code>/loans/:id</code> { status: accepted }.</li>
+      <li>Sarah récupère le livre physiquement, marque comme « Récupéré » → PATCH { status: active }.</li>
+      <li>À la fin, l'un ou l'autre marque « Rendu » → PATCH { status: returned, returned_at }.</li>
+    </ol>
+
+    <h3>⑤ Lecture d'un ePub</h3>
+    <ol>
+      <li>Clic « Lire » sur la fiche d'un livre numérique → <code>/read/:bookId</code>.</li>
+      <li>Liseuse charge l'ePub. Position reprise depuis la dernière lecture (table <code>Reading</code>).</li>
+      <li>L'utilisateur surligne un passage → POST <code>/annotations</code> (cfi_range + text_excerpt).</li>
+      <li>Toutes les 30s, position auto-sauvegardée → PATCH <code>/readings/:id</code> { last_position_cfi, progress }.</li>
+    </ol>
+  </section>
+
+  <!-- ========================================== -->
+  <section id="regles">
+    <h2><span class="num">06</span>Règles métier</h2>
+
+    <h3>Visibilité</h3>
+    <ul>
+      <li>Tous les membres d'un cercle voient <strong>tous les livres</strong> du cercle (numériques et physiques de tous).</li>
+      <li>Aucune visibilité <em>inter-cercles</em>. Les cercles sont des silos étanches.</li>
+      <li>Les <strong>annotations sont privées</strong> par défaut (chaque user ne voit que les siennes), même sur un livre numérique partagé.</li>
+    </ul>
+
+    <h3>Emprunts</h3>
+    <ul>
+      <li>Seuls les livres <strong>physiques</strong> font l'objet d'emprunts. Les numériques sont libres d'accès.</li>
+      <li>Un livre physique ne peut avoir qu'<strong>un seul</strong> emprunt actif (status active) à la fois.</li>
+      <li>Le propriétaire est <strong>seul à pouvoir accepter/refuser</strong> une demande.</li>
+      <li>Le demandeur peut <strong>annuler</strong> sa demande tant qu'elle est <em>pending</em>.</li>
+      <li>L'un ou l'autre peut marquer <em>returned</em>. Pas de durée d'emprunt par défaut (confiance).</li>
+    </ul>
+
+    <h3>Suppression</h3>
+    <ul>
+      <li>Un livre <strong>physique</strong> ne peut être supprimé que par son propriétaire.</li>
+      <li>Un livre <strong>numérique</strong> ne peut être supprimé que par celui qui l'a ajouté <em>ou</em> par un admin du cercle.</li>
+      <li>Soft delete : conservation des <code>Reading</code> et <code>Annotation</code> associés pour l'historique de l'utilisateur.</li>
+    </ul>
+
+    <h3>Permissions</h3>
+    <table>
+      <thead><tr><th>Action</th><th>Membre</th><th>Owner cercle</th></tr></thead>
+      <tbody>
+        <tr><td>Inviter de nouveaux membres</td><td>Demande</td><td>Direct</td></tr>
+        <tr><td>Retirer un membre</td><td>—</td><td>✓</td></tr>
+        <tr><td>Supprimer un livre numérique d'autrui</td><td>—</td><td>✓</td></tr>
+        <tr><td>Modifier les métadonnées d'un livre</td><td>Si propriétaire/contributeur</td><td>✓</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Notifications (V1)</h3>
+    <ul>
+      <li>In-app : badge sur l'item « Prêts » de la sidebar (compteur d'actions à mener).</li>
+      <li>Email : récap quotidien optionnel (demandes reçues, demandes acceptées, livres rendus).</li>
+      <li>Pas de push, pas de SMS, pas de notifications sonores.</li>
+    </ul>
+  </section>
+
+  <!-- ========================================== -->
+  <section id="api">
+    <h2><span class="num">07</span>API REST</h2>
+
+    <p>Toutes les routes sont préfixées <code>/api/v1</code>. Auth par cookie de session signé. Le <code>circle_id</code> courant est implicite (résolu via la session).</p>
+
+    <h4>Books</h4>
+    <div class="api-list">
+      <div class="api-item"><span class="verb GET">GET</span><div><div class="path">/books?format=&amp;genre=&amp;owner=&amp;sort=&amp;q=</div><div class="desc">Liste paginée du catalogue. Filtres optionnels.</div></div></div>
+      <div class="api-item"><span class="verb GET">GET</span><div><div class="path">/books/:id</div><div class="desc">Fiche complète + état de lecture du user courant + emprunt actif éventuel.</div></div></div>
+      <div class="api-item"><span class="verb POST">POST</span><div><div class="path">/books</div><div class="desc">Créer un livre. Body : format + métadonnées + (file pour numérique).</div></div></div>
+      <div class="api-item"><span class="verb PATCH">PATCH</span><div><div class="path">/books/:id</div><div class="desc">Mettre à jour les métadonnées (titre, étagère, etc.).</div></div></div>
+      <div class="api-item"><span class="verb DELETE">DELETE</span><div><div class="path">/books/:id</div><div class="desc">Soft delete. Permission selon règles métier.</div></div></div>
+      <div class="api-item"><span class="verb GET">GET</span><div><div class="path">/books/:id/file?format=epub|pdf</div><div class="desc">Téléchargement ou stream pour la liseuse. Conversion à la volée si nécessaire.</div></div></div>
+    </div>
+
+    <h4>Lookup (métadonnées)</h4>
+    <div class="api-list">
+      <div class="api-item"><span class="verb GET">GET</span><div><div class="path">/lookup/isbn/:isbn</div><div class="desc">Renvoie les métadonnées d'une édition pour un ISBN. Backend : Open Library → fallback Google Books.</div></div></div>
+      <div class="api-item"><span class="verb GET">GET</span><div><div class="path">/lookup/search?q=</div><div class="desc">Recherche multi-éditions par titre/auteur. Renvoie une liste d'éditions avec ISBN, éditeur, année, pages, vignette.</div></div></div>
+      <div class="api-item"><span class="verb POST">POST</span><div><div class="path">/lookup/extract-epub</div><div class="desc">Multipart upload d'un ePub. Renvoie les métadonnées OPF + cover extraite (sans persister le fichier).</div></div></div>
+    </div>
+
+    <h4>Loans</h4>
+    <div class="api-list">
+      <div class="api-item"><span class="verb GET">GET</span><div><div class="path">/loans?role=requester|owner&amp;status=</div><div class="desc">Mes prêts, filtrables.</div></div></div>
+      <div class="api-item"><span class="verb POST">POST</span><div><div class="path">/loans</div><div class="desc">Créer une demande. Body : { book_id, message }.</div></div></div>
+      <div class="api-item"><span class="verb PATCH">PATCH</span><div><div class="path">/loans/:id</div><div class="desc">Changer de statut (accepted, declined, active, returned, canceled). Permission validée côté serveur.</div></div></div>
+    </div>
+
+    <h4>Reading &amp; annotations</h4>
+    <div class="api-list">
+      <div class="api-item"><span class="verb GET">GET</span><div><div class="path">/readings/:bookId</div><div class="desc">Mon état de lecture sur ce livre.</div></div></div>
+      <div class="api-item"><span class="verb PATCH">PATCH</span><div><div class="path">/readings/:bookId</div><div class="desc">MAJ position, progression, statut. Auto-save toutes les 30s.</div></div></div>
+      <div class="api-item"><span class="verb GET">GET</span><div><div class="path">/books/:id/annotations</div><div class="desc">Mes annotations sur ce livre.</div></div></div>
+      <div class="api-item"><span class="verb POST">POST</span><div><div class="path">/annotations</div><div class="desc">Créer un marque-page, surlignage, note.</div></div></div>
+      <div class="api-item"><span class="verb DELETE">DELETE</span><div><div class="path">/annotations/:id</div><div class="desc">Supprimer une annotation.</div></div></div>
+    </div>
+
+    <h4>Cercle &amp; users</h4>
+    <div class="api-list">
+      <div class="api-item"><span class="verb GET">GET</span><div><div class="path">/circle/me</div><div class="desc">Cercle courant + liste des membres.</div></div></div>
+      <div class="api-item"><span class="verb POST">POST</span><div><div class="path">/circle/invites</div><div class="desc">Inviter par email. Génère un lien magique 7 jours.</div></div></div>
+      <div class="api-item"><span class="verb GET">GET</span><div><div class="path">/users/:id</div><div class="desc">Profil public d'un membre + son étagère physique.</div></div></div>
+      <div class="api-item"><span class="verb PATCH">PATCH</span><div><div class="path">/users/me</div><div class="desc">Mes préférences (densité, ambiance, polices liseuse).</div></div></div>
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <section id="stack">
+    <h2><span class="num">08</span>Stack technique</h2>
+
+    <p>Choix orientés <strong>simplicité</strong>, <strong>robustesse</strong>, <strong>écosystème mature</strong>. Pas de techno expérimentale en V1.</p>
+
+    <div class="stack-grid">
+      <div class="stack-card">
+        <div class="layer">Front</div>
+        <div class="pick">Next.js 14 (App Router)</div>
+        <div class="why">SSR + RSC pour le catalogue, client pour la liseuse. Auth middleware natif.</div>
+      </div>
+      <div class="stack-card">
+        <div class="layer">UI</div>
+        <div class="pick">React + Tailwind CSS</div>
+        <div class="why">Tokens du design system → variables CSS + plugin Tailwind. Composants custom (pas de shadcn par défaut, trop générique).</div>
+      </div>
+      <div class="stack-card">
+        <div class="layer">Liseuse</div>
+        <div class="pick">epub.js (Futurepress)</div>
+        <div class="why">Le seul lecteur ePub web mature. Gère CFI (Canonical Fragment Identifier) pour positions et annotations.</div>
+      </div>
+      <div class="stack-card">
+        <div class="layer">Backend</div>
+        <div class="pick">Next.js Route Handlers + tRPC</div>
+        <div class="why">Une seule app fullstack pour V1. Contrats typés bout-en-bout. Possibilité d'extraire en service séparé plus tard.</div>
+      </div>
+      <div class="stack-card">
+        <div class="layer">DB</div>
+        <div class="pick">PostgreSQL + Prisma</div>
+        <div class="why">Relations propres entre entités, full-text search natif, JSON pour préférences.</div>
+      </div>
+      <div class="stack-card">
+        <div class="layer">Stockage fichiers</div>
+        <div class="pick">S3-compatible (Cloudflare R2)</div>
+        <div class="why">ePub/PDF + couvertures. URL signées 1h pour télécharger/streamer. Coût négligeable.</div>
+      </div>
+      <div class="stack-card">
+        <div class="layer">Auth</div>
+        <div class="pick">Auth.js (NextAuth) — magic links</div>
+        <div class="why">Lien email, pas de mot de passe. Cohérent avec le modèle « cercle privé invitation-only ».</div>
+      </div>
+      <div class="stack-card">
+        <div class="layer">Email</div>
+        <div class="pick">Resend</div>
+        <div class="why">Magic links + récap quotidien. API simple, prix raisonnable.</div>
+      </div>
+      <div class="stack-card">
+        <div class="layer">ePub parsing</div>
+        <div class="pick">epub-parser (Node)</div>
+        <div class="why">Extraction OPF, cover image, table des matières côté serveur lors de l'upload.</div>
+      </div>
+      <div class="stack-card">
+        <div class="layer">Hosting</div>
+        <div class="pick">Vercel + Neon</div>
+        <div class="why">Déploiement zéro-config. Neon = Postgres serverless avec branching pour les preview deploys.</div>
+      </div>
+    </div>
+
+    <h3>Versions précises</h3>
+<pre><code>node          ≥ 20 LTS
+next          14.2.x
+react         18.3.x
+typescript    5.4.x
+tailwindcss   3.4.x
+prisma        5.14.x
+@auth/core    0.x  (Auth.js v5)
+epubjs        0.3.x (client)
+epub-parser   0.x   (server)
+zod           3.23.x</code></pre>
+  </section>
+
+  <!-- ========================================== -->
+  <section id="archi">
+    <h2><span class="num">09</span>Architecture</h2>
+
+    <h3>Arborescence du repo</h3>
+<pre><code>sifriya/
+├─ app/
+│  ├─ (app)/                 // routes authentifiées
+│  │  ├─ layout.tsx          // sidebar + topbar
+│  │  ├─ page.tsx            // /  → catalogue
+│  │  ├─ books/[id]/page.tsx
+│  │  ├─ read/[id]/page.tsx
+│  │  ├─ community/page.tsx
+│  │  ├─ loans/page.tsx
+│  │  ├─ add/page.tsx
+│  │  ├─ search/page.tsx
+│  │  └─ me/page.tsx
+│  ├─ (auth)/
+│  │  ├─ login/page.tsx
+│  │  └─ invite/[token]/page.tsx
+│  ├─ api/
+│  │  ├─ trpc/[trpc]/route.ts
+│  │  ├─ books/[id]/file/route.ts   // streaming
+│  │  └─ webhooks/...
+│  └─ globals.css            // tokens design system
+│
+├─ components/
+│  ├─ primitives/            // Button, Input, Pill, Avatar
+│  ├─ book/                  // BookCover, BookCard, ListRow, Shelf
+│  ├─ loans/                 // LoanRow, LoanRequestModal
+│  ├─ reader/                // Reader, ReaderSettings, AnnotationLayer
+│  └─ layout/                // Sidebar, Topbar, PageHeader
+│
+├─ lib/
+│  ├─ trpc/                  // routers, server, client
+│  ├─ db/                    // prisma client
+│  ├─ lookup/                // openlibrary.ts, googlebooks.ts, epub.ts
+│  ├─ storage/               // s3.ts, signed-urls.ts
+│  └─ auth/                  // auth.config.ts
+│
+├─ prisma/
+│  ├─ schema.prisma
+│  └─ migrations/
+│
+├─ tests/
+│  ├─ unit/
+│  └─ e2e/                   // playwright
+│
+└─ public/</code></pre>
+
+    <h3>Conventions</h3>
+    <ul>
+      <li><strong>Server Components par défaut</strong>, Client uniquement quand interactivité (liseuse, modales, formulaires).</li>
+      <li><strong>tRPC</strong> pour 100 % des écritures et lectures dynamiques. Routes <code>/api</code> classiques uniquement pour le streaming de fichiers.</li>
+      <li><strong>Validation Zod</strong> partout : input tRPC, formulaires côté client.</li>
+      <li><strong>Tokens CSS</strong> dans <code>app/globals.css</code> → variables consommées par Tailwind via le plugin <code>theme.extend</code>.</li>
+      <li>Pas d'<em>any</em> en TS. Strict mode activé.</li>
+    </ul>
+  </section>
+
+  <!-- ========================================== -->
+  <section id="liseuse">
+    <h2><span class="num">10</span>Liseuse — détails</h2>
+
+    <h3>Capabilités V1</h3>
+    <ul>
+      <li>Pagination chapitre par chapitre, navigation clavier (← →) et tactile (swipe).</li>
+      <li>3 thèmes : <strong>Jour</strong> (#FAF7EF/#1F1B13), <strong>Sépia</strong> (#F4ECD8/#5A3A1F), <strong>Nuit</strong> (#1A1814/#C8C0A8).</li>
+      <li>Taille de police : 14 → 28px (slider).</li>
+      <li>3 polices : Source Serif 4, EB Garamond, Atkinson Hyperlegible.</li>
+      <li>Sommaire (TOC) extrait du <code>nav.xhtml</code> de l'ePub.</li>
+      <li>Marque-pages, surlignages (4 couleurs : jaune, vert, bleu, rose), notes.</li>
+      <li>Recherche dans le livre (full-text via epub.js).</li>
+      <li>Reprise de position : sauvegarde du <code>CFI</code> après chaque tournage de page + toutes les 30s.</li>
+    </ul>
+
+    <h3>Hors-scope V1</h3>
+    <ul>
+      <li>Synchronisation cross-device en temps réel (V2 — pour V1, last-write-wins).</li>
+      <li>TTS (synthèse vocale) — V2.</li>
+      <li>Dictionnaire intégré — V3.</li>
+      <li>Annotations partagées entre membres — V3.</li>
+    </ul>
+
+    <h3>Format & DRM</h3>
+    <ul>
+      <li>ePub 3 et ePub 2 supportés. PDF en <em>fallback viewer</em> (PDF.js), sans annotations.</li>
+      <li><strong>Aucun DRM accepté</strong>. Si un fichier en contient, refus à l'upload avec message clair.</li>
+      <li>Conversion PDF → ePub via <strong>Calibre CLI</strong> en backend (job asynchrone) — pour le bouton « Télécharger en ePub » sur fiche d'un PDF.</li>
+    </ul>
+  </section>
+
+  <!-- ========================================== -->
+  <section id="externes">
+    <h2><span class="num">11</span>Services externes</h2>
+
+    <table>
+      <thead><tr><th>Service</th><th>Usage</th><th>Coût</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Open Library API</strong></td><td>Lookup ISBN + recherche éditions (source primaire)</td><td>Gratuit, sans clé</td></tr>
+        <tr><td><strong>Google Books API</strong></td><td>Fallback ISBN si Open Library vide</td><td>Gratuit avec clé, 1000 req/j</td></tr>
+        <tr><td><strong>Cloudflare R2</strong></td><td>Stockage ePub/PDF + couvertures</td><td>~0,015 $/Go/mois</td></tr>
+        <tr><td><strong>Resend</strong></td><td>Magic links + récap quotidien</td><td>Gratuit jusqu'à 3000 mails/mois</td></tr>
+        <tr><td><strong>Neon</strong></td><td>PostgreSQL hébergé</td><td>Gratuit jusqu'à 0,5 Go</td></tr>
+        <tr><td><strong>Vercel</strong></td><td>Hébergement Next.js</td><td>Gratuit pour V1</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Estimation V1 (cercle de 20 personnes)</h3>
+    <ul>
+      <li>~ 500 livres × 2 Mo (ePub moyen) = <strong>1 Go de stockage</strong> → 0,015 $/mois (R2).</li>
+      <li>~ 200 emails/mois → gratuit (Resend).</li>
+      <li>~ 50 Mo de DB → gratuit (Neon free).</li>
+      <li><strong>Total infra : &lt; 1 $/mois</strong> par cercle.</li>
+    </ul>
+  </section>
+
+  <!-- ========================================== -->
+  <section id="qualite">
+    <h2><span class="num">12</span>Qualité &amp; tests</h2>
+
+    <h3>Pyramide de tests</h3>
+    <ul>
+      <li><strong>Unit (Vitest)</strong> : utilitaires de lookup, parsers ePub, validation Zod, transitions d'état des prêts.</li>
+      <li><strong>Intégration (Vitest + testcontainers)</strong> : routers tRPC contre une vraie DB Postgres éphémère.</li>
+      <li><strong>E2E (Playwright)</strong> : 5 parcours critiques uniquement
+        <ol>
+          <li>Inscription via magic link → premier login.</li>
+          <li>Ajout d'un livre par ISBN.</li>
+          <li>Demande d'emprunt → acceptation → marquage rendu.</li>
+          <li>Upload d'un ePub → lecture dans la liseuse.</li>
+          <li>Recherche transverse.</li>
+        </ol>
+      </li>
+    </ul>
+
+    <h3>Critères de qualité</h3>
+    <ul>
+      <li>Lighthouse Performance ≥ 90 sur le catalogue.</li>
+      <li>Lighthouse Accessibility ≥ 95 sur tous les écrans.</li>
+      <li>Cold start liseuse &lt; 2s pour un ePub de 2 Mo.</li>
+      <li>Couverture tests &gt; 80 % sur <code>lib/</code> (logique métier).</li>
+      <li>Aucun <em>any</em> TypeScript, aucun warning ESLint en CI.</li>
+    </ul>
+
+    <h3>Sécurité</h3>
+    <ul>
+      <li>Tous les fichiers stockés en R2 servis via <strong>URL signées 1h</strong>, jamais en accès public.</li>
+      <li>Permissions vérifiées <strong>côté serveur</strong> sur chaque mutation tRPC (pas de check côté client uniquement).</li>
+      <li>Rate limit sur <code>/lookup/*</code> et magic links (10 req/min/IP).</li>
+      <li>CSP stricte sauf sur la liseuse (epub.js a besoin d'<code>unsafe-inline</code> dans les iframes — sandbox compensatoire).</li>
+      <li>Pas de stockage de mots de passe (auth par magic link only).</li>
+    </ul>
+  </section>
+
+  <!-- ========================================== -->
+  <section id="roadmap">
+    <h2><span class="num">13</span>Roadmap MVP</h2>
+
+    <p>6 phases sur ~10 semaines à 1 développeur temps plein, ou 5 semaines à 2 devs.</p>
+
+    <div class="phase">
+      <div class="title-row">
+        <span class="num">Phase 1</span>
+        <h4>Fondations</h4>
+        <span class="duration">1 semaine</span>
+      </div>
+      <ul>
+        <li>Setup Next.js + Tailwind + Prisma + Auth.js + tRPC.</li>
+        <li>Schéma Prisma complet + migration initiale.</li>
+        <li>Magic link auth + page d'invitation par token.</li>
+        <li>Layout principal (sidebar + topbar) avec tokens du design system.</li>
+        <li>Composants primitives (Button, Input, Pill, Avatar) calqués sur le DS.</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <div class="title-row">
+        <span class="num">Phase 2</span>
+        <h4>Catalogue &amp; ajout manuel</h4>
+        <span class="duration">1,5 semaine</span>
+      </div>
+      <ul>
+        <li>Composants <code>BookCover</code>, <code>BookCard</code>, <code>ListRow</code>.</li>
+        <li>Écrans Catalogue (grille + liste) et fiche livre.</li>
+        <li>Ajout manuel d'un livre (numérique avec upload, physique sans lookup).</li>
+        <li>Storage R2 + URL signées + extraction métadata ePub côté serveur.</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <div class="title-row">
+        <span class="num">Phase 3</span>
+        <h4>Lookup ISBN &amp; éditions</h4>
+        <span class="duration">1 semaine</span>
+      </div>
+      <ul>
+        <li>Wrappers Open Library + Google Books avec fallback.</li>
+        <li>Endpoint <code>/lookup/isbn/:isbn</code> et <code>/lookup/search</code>.</li>
+        <li>Flow d'ajout par ISBN et par titre+édition côté UI.</li>
+        <li>Cache des résultats (DB ou KV) pour éviter les appels répétés.</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <div class="title-row">
+        <span class="num">Phase 4</span>
+        <h4>Emprunts &amp; communauté</h4>
+        <span class="duration">1,5 semaine</span>
+      </div>
+      <ul>
+        <li>Modèle Loan + transitions d'état + permissions.</li>
+        <li>Modale de demande d'emprunt depuis la fiche.</li>
+        <li>Écran Prêts (4 onglets avec actions accept/decline/return).</li>
+        <li>Écran Communauté avec étagères des membres.</li>
+        <li>Job quotidien Resend (récap des actions à mener).</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <div class="title-row">
+        <span class="num">Phase 5</span>
+        <h4>Liseuse</h4>
+        <span class="duration">2 semaines</span>
+      </div>
+      <ul>
+        <li>Intégration epub.js dans un Client Component <code>Reader</code>.</li>
+        <li>Thèmes, polices, taille texte (préférences user persistées).</li>
+        <li>Sommaire + navigation par chapitre.</li>
+        <li>Marque-pages, surlignages, notes (CRUD avec sync DB).</li>
+        <li>Reprise de position auto + recherche dans le livre.</li>
+        <li>Viewer PDF.js en fallback (sans annotations).</li>
+      </ul>
+    </div>
+
+    <div class="phase">
+      <div class="title-row">
+        <span class="num">Phase 6</span>
+        <h4>Polish, tests, déploiement</h4>
+        <span class="duration">1,5 semaine</span>
+      </div>
+      <ul>
+        <li>Recherche transverse + écran profil/paramètres.</li>
+        <li>Suite Playwright E2E des 5 parcours critiques.</li>
+        <li>Tweaks (densité, ambiance) en préférences user.</li>
+        <li>Lighthouse pass + a11y audit.</li>
+        <li>Onboarding (création de cercle, première invitation).</li>
+        <li>Déploiement Vercel + Neon prod.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <section id="nogo">
+    <h2><span class="num">14</span>Hors-scope &amp; non-objectifs</h2>
+
+    <p>Ce que Sifriya <strong>n'est pas</strong> et ne deviendra pas en V1 — pour cadrer fermement le scope.</p>
+
+    <h3>Pas dans la V1</h3>
+    <ul>
+      <li><strong>App native iOS/Android.</strong> PWA only. Une app native pourra suivre en V2.</li>
+      <li><strong>Multi-cercles par utilisateur.</strong> Un utilisateur = un cercle pour V1.</li>
+      <li><strong>Découverte / recommandation publique.</strong> Sifriya est privée, pas un Goodreads.</li>
+      <li><strong>Achat de livres.</strong> Aucune intégration commerciale.</li>
+      <li><strong>Synchronisation temps réel multi-device de la liseuse.</strong> Save sur tournage de page suffit.</li>
+      <li><strong>Annotations partagées</strong> entre membres. Privées par défaut, pas d'option de partage en V1.</li>
+      <li><strong>Stats / gamification / streaks de lecture.</strong> Anti-pattern total.</li>
+      <li><strong>IA de résumé / suggestions.</strong> Pas avant que le produit ne soit solide.</li>
+      <li><strong>Import depuis Goodreads / Calibre / autres.</strong> En V2 si demande forte.</li>
+    </ul>
+
+    <h3>Anti-patterns à proscrire</h3>
+    <ul>
+      <li>Pop-ups onboarding intrusifs, tooltips multiples au premier login.</li>
+      <li>Notifications push / sonores / badges sur l'icône d'app.</li>
+      <li>Gradients, emoji décoratifs, illustrations de mascotte, animations gratuites.</li>
+      <li>Dark mode système-wide. Le mode nuit est uniquement contextuel à la liseuse.</li>
+      <li>Stockage de l'historique de lecture côté tiers (analytics granulaires).</li>
+    </ul>
+  </section>
+
+  <p style="font-size: 12px; color: var(--ink-4); margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--rule);">
+    Sifriya · Spec produit V1 · prête pour Claude Code — référencer le <em>Design System.html</em> en parallèle pour les tokens et composants.
+  </p>
+</main>
+</body>
+</html>
