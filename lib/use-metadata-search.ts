@@ -39,6 +39,13 @@ export type MetadataSearch = State & {
 
 export function useMetadataSearch(): MetadataSearch {
   const [state, setState] = React.useState<State>(INITIAL)
+  // Ref miroir de l'etat : permet de lire la valeur courante depuis loadMore
+  // sans dependre du closure du dernier render (evite des bugs de "stale state"
+  // si le composant n'a pas re-rendu entre deux clics sur "Charger plus").
+  const stateRef = React.useRef<State>(INITIAL)
+  React.useEffect(() => {
+    stateRef.current = state
+  }, [state])
   // On annule les requetes obsoletes (tap rapide + course conditions).
   const seqRef = React.useRef(0)
 
@@ -46,25 +53,28 @@ export function useMetadataSearch(): MetadataSearch {
     const trimmed = q.trim()
     const seq = ++seqRef.current
     if (trimmed.length < 2) {
-      setState({ ...INITIAL, query: q, hasSearched: false })
+      const next = { ...INITIAL, query: q, hasSearched: false }
+      stateRef.current = next
+      setState(next)
       return
     }
-    setState((s) => ({
-      ...s,
-      query: q,
-      searching: true,
-      loadingMore: false,
-      error: null,
-      hasSearched: true
-    }))
+    setState((s) => {
+      const next = { ...s, query: q, searching: true, loadingMore: false, error: null, hasSearched: true }
+      stateRef.current = next
+      return next
+    })
     const res = await fetch(`/api/metadata?q=${encodeURIComponent(trimmed)}&limit=5&offset=0`)
     if (seq !== seqRef.current) return
     if (!res.ok) {
-      setState((s) => ({ ...s, searching: false, error: "Echec de la recherche." }))
+      setState((s) => {
+        const next = { ...s, searching: false, error: "Echec de la recherche." }
+        stateRef.current = next
+        return next
+      })
       return
     }
     const body = (await res.json()) as ApiResponse
-    setState({
+    const next: State = {
       query: q,
       results: body.results,
       source: body.source,
@@ -73,27 +83,22 @@ export function useMetadataSearch(): MetadataSearch {
       loadingMore: false,
       error: null,
       hasSearched: true
-    })
+    }
+    stateRef.current = next
+    setState(next)
   }, [])
 
   const loadMore = React.useCallback(async () => {
-    setState((s) => {
-      if (s.loadingMore || s.searching || !s.hasMore || !s.source || s.source === "mixed") {
-        return s
-      }
-      return { ...s, loadingMore: true, error: null }
-    })
-    // Capture l'etat courant pour construire la requete (en dehors du setState
-    // pour eviter les valeurs perimees).
-    let snapshot: State | null = null
-    setState((s) => {
-      snapshot = s
-      return s
-    })
-    const s = snapshot!
-    if (!s.hasMore || !s.source || s.source === "mixed") {
+    const s = stateRef.current
+    if (s.loadingMore || s.searching || !s.hasMore || !s.source || s.source === "mixed") {
       return
     }
+    setState((cur) => {
+      const next = { ...cur, loadingMore: true, error: null }
+      stateRef.current = next
+      return next
+    })
+
     const params = new URLSearchParams({
       q: s.query.trim(),
       limit: "5",
@@ -104,27 +109,34 @@ export function useMetadataSearch(): MetadataSearch {
     const res = await fetch(`/api/metadata?${params.toString()}`)
     if (seq !== seqRef.current) return
     if (!res.ok) {
-      setState((cur) => ({ ...cur, loadingMore: false, error: "Echec du chargement." }))
+      setState((cur) => {
+        const next = { ...cur, loadingMore: false, error: "Echec du chargement." }
+        stateRef.current = next
+        return next
+      })
       return
     }
     const body = (await res.json()) as ApiResponse
     setState((cur) => {
       // Dedup : Google Books peut renvoyer des resultats qui chevauchent les
-      // pages precedentes (le tri n'est pas strictement stable). On filtre par
+      // pages precedentes (tri non strictement stable). Filtre par
       // externalId+source.
       const seen = new Set(cur.results.map((r) => `${r.source}:${r.externalId}`))
       const fresh = body.results.filter((r) => !seen.has(`${r.source}:${r.externalId}`))
-      return {
+      const next = {
         ...cur,
         results: [...cur.results, ...fresh],
         hasMore: body.hasMore && fresh.length > 0,
         loadingMore: false
       }
+      stateRef.current = next
+      return next
     })
   }, [])
 
   const reset = React.useCallback(() => {
     seqRef.current++
+    stateRef.current = INITIAL
     setState(INITIAL)
   }, [])
 
