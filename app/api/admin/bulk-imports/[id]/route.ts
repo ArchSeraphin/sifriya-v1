@@ -7,6 +7,51 @@ import { logger } from "@/lib/logger"
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
+export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const auth = await requireAdmin()
+  if (!auth.ok) return auth.response
+
+  const { id } = await ctx.params
+  const session = await db.bulkImportSession.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      ownerId: true,
+      status: true,
+      totalFiles: true,
+      createdAt: true,
+      updatedAt: true,
+      committedAt: true,
+      items: {
+        select: {
+          id: true,
+          filename: true,
+          format: true,
+          fileSize: true,
+          status: true,
+          extractedTitle: true,
+          extractedAuthor: true,
+          extractedIsbn: true,
+          candidatesJson: true,
+          chosenCandidate: true,
+          mergeIntoBookId: true,
+          decision: true,
+          errorMessage: true,
+          committedBookId: true,
+          committedCopyId: true,
+          createdAt: true,
+          updatedAt: true
+        },
+        orderBy: { createdAt: "asc" }
+      }
+    }
+  })
+  if (!session) return NextResponse.json({ error: "Session introuvable." }, { status: 404 })
+  if (session.ownerId !== auth.userId) return NextResponse.json({ error: "Acces refuse." }, { status: 403 })
+
+  return NextResponse.json({ session })
+}
+
 // DELETE — abandonne la session : status = ABANDONED, purge des pending files non commits.
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const auth = await requireAdmin()
