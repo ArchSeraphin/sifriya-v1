@@ -1,5 +1,5 @@
 import * as React from "react"
-import type { BookType, FileFormat } from "@prisma/client"
+import type { CopyType, FileFormat } from "@prisma/client"
 import { cn } from "@/lib/cn"
 
 // Pills compactes pour la grille / les listes : meme metrique que Badge mais
@@ -22,16 +22,16 @@ export function FormatBadge({ format, className }: { format: FileFormat; classNa
   )
 }
 
-const TYPE_CLASSES: Record<BookType, string> = {
+const TYPE_CLASSES: Record<CopyType, string> = {
   DIGITAL: "bg-paper-2 text-ink-2",
   PHYSICAL: "bg-[rgba(168,106,31,0.14)] text-[color:var(--warn)]"
 }
 
-const TYPE_LABEL: Record<BookType, string> = {
+const TYPE_LABEL: Record<CopyType, string> = {
   DIGITAL: "Numerique",
   PHYSICAL: "Physique"
 }
 
-export function TypeBadge({ type, className }: { type: BookType; className?: string }) {
+export function TypeBadge({ type, className }: { type: CopyType; className?: string }) {
   return <span className={cn(PILL_BASE, TYPE_CLASSES[type], className)}>{TYPE_LABEL[type]}</span>
 }
