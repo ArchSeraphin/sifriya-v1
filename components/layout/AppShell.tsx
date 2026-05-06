@@ -11,7 +11,7 @@ export async function AppShell({ children }: AppShellProps) {
   if (!session?.user) redirect("/login")
 
   return (
-    <div className="flex min-h-dvh flex-col bg-paper">
+    <div className="flex h-dvh flex-col overflow-hidden bg-paper">
       <TopBar />
       <div className="flex flex-1 min-h-0">
         <Sidebar

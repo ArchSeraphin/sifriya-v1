@@ -10,6 +10,9 @@ type Props = {
   onChange: (k: string) => void
   sessionId: string
   onCommitted: () => void
+  // Nombre d'items avec une decision prise (CREATE / MERGE / SKIP) et pas
+  // encore commits. C'est exactement ce que le bouton "Importer" va traiter.
+  readyToCommit: number
 }
 
 const STATUSES: Array<{ key: string; label: string; color: string }> = [
@@ -46,19 +49,19 @@ export function ImportFilters({
   active,
   onChange,
   sessionId,
-  onCommitted
+  onCommitted,
+  readyToCommit
 }: Props) {
   const [pending, setPending] = React.useState(false)
-  const autoOkCount = counts.AUTO_OK ?? 0
 
-  const bulkImportAutoOk = async () => {
-    if (autoOkCount === 0) return
+  const bulkCommit = async () => {
+    if (readyToCommit === 0) return
     setPending(true)
     try {
       const res = await fetch(`/api/admin/bulk-imports/${sessionId}/commit`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({}) // commit tous les items decides (CREATE pre-rempli pour AUTO_OK)
+        body: JSON.stringify({}) // commit tous les items decides
       })
       if (!res.ok) throw new Error("Echec du commit.")
       onCommitted()
@@ -91,8 +94,8 @@ export function ImportFilters({
         ))}
       </div>
 
-      <Button onClick={bulkImportAutoOk} disabled={pending || autoOkCount === 0}>
-        Importer {autoOkCount} OK
+      <Button onClick={bulkCommit} disabled={pending || readyToCommit === 0}>
+        Importer {readyToCommit}
       </Button>
     </div>
   )

@@ -87,6 +87,10 @@ export function ImportClient({ sessionId, totalFiles, initialStatus }: Props) {
   const processedCount = items.filter(
     (i) => i.status !== "PENDING" && i.status !== "PROCESSING"
   ).length
+  // Items prets a commit : decision prise (CREATE/MERGE/SKIP) et pas encore commits.
+  const readyToCommit = items.filter(
+    (i) => i.decision !== "NONE" && !i.committedBookId
+  ).length
 
   const openItem = items.find((i) => i.id === openItemId) ?? null
 
@@ -137,6 +141,7 @@ export function ImportClient({ sessionId, totalFiles, initialStatus }: Props) {
         onChange={setFilter}
         sessionId={sessionId}
         onCommitted={refetch}
+        readyToCommit={readyToCommit}
       />
       <ImportTable items={visibleItems} sessionId={sessionId} />
 
