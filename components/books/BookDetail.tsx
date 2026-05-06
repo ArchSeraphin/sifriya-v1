@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/Badge"
 import { type BookDetailDTO, digitalFormats, physicalCount } from "@/lib/books"
 import { LoanRequestButton } from "@/components/books/LoanRequestButton"
 import { CopyList } from "@/components/books/CopyList"
+import type { ReadingStatus } from "@prisma/client"
+import { ReadingStatusPicker } from "@/components/books/ReadingStatusPicker"
 
 const dateFmt = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" })
 
@@ -15,13 +17,15 @@ type Props = {
   activeLoansByCopy: Record<string, { id: string; status: "PENDING" | "ACCEPTED"; requester: { id: string; name: string | null; email: string; avatarColor: string } }>
   // Demandes que cet user a en cours (key=copyId)
   myActiveRequestsByCopy: Record<string, { id: string; status: "PENDING" | "ACCEPTED" }>
+  currentReading?: { status: ReadingStatus } | null
 }
 
 export function BookDetail({
   book,
   currentUser,
   activeLoansByCopy,
-  myActiveRequestsByCopy
+  myActiveRequestsByCopy,
+  currentReading
 }: Props) {
   const formats = digitalFormats(book)
   const physicalCopies = book.copies.filter((c) => c.type === "PHYSICAL")
@@ -65,6 +69,12 @@ export function BookDetail({
                 {physicalsCount === 1 ? "Physique" : `Physique × ${physicalsCount}`}
               </Badge>
             ) : null}
+          </div>
+          <div className="mt-4">
+            <ReadingStatusPicker
+              bookId={book.id}
+              currentStatus={currentReading?.status ?? null}
+            />
           </div>
           <h1 className="mt-3 font-serif text-3xl leading-tight text-ink">{book.title}</h1>
           {book.author ? <p className="mt-1 text-base text-ink-2">{book.author}</p> : null}
