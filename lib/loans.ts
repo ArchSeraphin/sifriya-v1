@@ -1,6 +1,6 @@
 import crypto from "node:crypto"
 import { SignJWT, jwtVerify } from "jose"
-import type { Loan, BookCopy, Book, User } from "@prisma/client"
+import type { Loan, Prisma } from "@prisma/client"
 
 const ISSUER = "sifriya"
 const AUDIENCE = "sifriya:loan-respond"
@@ -55,18 +55,9 @@ export function buildRespondUrl(opts: {
 
 // =====================================================================
 // DTO pour la page /pret
+// LoanWithRefs derive du shape exact de LOAN_INCLUDE via Prisma.LoanGetPayload
+// pour eviter les casts `as unknown as` cote appelants.
 // =====================================================================
-
-type PersonLite = Pick<User, "id" | "name" | "email" | "avatarColor">
-
-export type LoanWithRefs = Loan & {
-  copy: Pick<BookCopy, "id" | "type" | "format"> & {
-    book: Pick<Book, "id" | "title" | "author" | "coverUrl">
-    owner: PersonLite | null
-  }
-  requester: PersonLite
-  owner: PersonLite
-}
 
 export const LOAN_INCLUDE = {
   copy: {
@@ -80,7 +71,9 @@ export const LOAN_INCLUDE = {
   },
   requester: { select: { id: true, name: true, email: true, avatarColor: true } },
   owner: { select: { id: true, name: true, email: true, avatarColor: true } }
-} as const
+} as const satisfies Prisma.LoanInclude
+
+export type LoanWithRefs = Prisma.LoanGetPayload<{ include: typeof LOAN_INCLUDE }>
 
 export function statusLabel(status: Loan["status"]): string {
   switch (status) {

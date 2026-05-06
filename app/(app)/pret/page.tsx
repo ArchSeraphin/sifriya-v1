@@ -3,7 +3,8 @@ import { redirect } from "next/navigation"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { LOAN_INCLUDE, type LoanWithRefs } from "@/lib/loans"
+import { LOAN_INCLUDE } from "@/lib/loans"
+import type { LoanWithRefs } from "@/lib/loans"
 import { LoanRow } from "@/components/loans/LoanRow"
 import { HandHelping } from "lucide-react"
 
@@ -23,12 +24,12 @@ export default async function PretPage() {
       where: { requesterId: userId },
       orderBy: { createdAt: "desc" },
       include: LOAN_INCLUDE
-    }) as unknown as Promise<LoanWithRefs[]>,
+    }),
     db.loan.findMany({
       where: { ownerId: userId },
       orderBy: { createdAt: "desc" },
       include: LOAN_INCLUDE
-    }) as unknown as Promise<LoanWithRefs[]>
+    })
   ])
 
   return (

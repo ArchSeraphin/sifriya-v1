@@ -54,7 +54,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     headers: {
       "content-type": format === "EPUB" ? "application/epub+zip" : "application/pdf",
       "content-length": String(meta.size),
-      "content-disposition": `attachment; filename="${filename}"`
+      "content-disposition": `attachment; filename="${filename}"`,
+      // Fichiers prives : aucun cache cote proxy/CDN/SW.
+      "cache-control": "private, no-store"
     }
   })
 }

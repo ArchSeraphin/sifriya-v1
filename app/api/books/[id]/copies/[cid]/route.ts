@@ -60,7 +60,15 @@ export async function DELETE(
   })
 
   if (copy.type === "DIGITAL") {
-    await deleteByKey(copy.filePath ?? null)
+    // Le fichier est purgeable independamment : si la suppression FS echoue
+    // (transient I/O, ENOENT…), on a deja supprime la row DB. On log et on
+    // retourne quand meme 200 pour ne pas mentir au client.
+    try {
+      await deleteByKey(copy.filePath ?? null)
+    } catch (err) {
+      const { logger } = await import("@/lib/logger")
+      logger.error("delete copy file failed", { copyId, err: String(err) })
+    }
   }
 
   return NextResponse.json({ ok: true })
