@@ -24,6 +24,15 @@ export default async function MesLivresPage() {
     select: PUBLIC_BOOK_SELECT
   })
 
+  const readings = await db.reading.findMany({
+    where: {
+      userId: session.user.id,
+      bookId: { in: books.map((b) => b.id) }
+    },
+    select: { bookId: true, status: true }
+  })
+  const readingByBookId = new Map(readings.map((r) => [r.bookId, r.status] as const))
+
   return (
     <section className="mx-auto max-w-6xl">
       <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -52,7 +61,7 @@ export default async function MesLivresPage() {
           </div>
         </div>
       ) : (
-        <BookGrid books={books} />
+        <BookGrid books={books} readingByBookId={readingByBookId} />
       )}
     </section>
   )

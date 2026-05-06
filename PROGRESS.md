@@ -17,6 +17,8 @@
 | Fix | `603da82` | `loadMore` null state (capture via `stateRef` au lieu d'un setState lecteur) |
 | Feature | `a4245ac` | Édition du nom affiché sur `/profil` (`PATCH /api/me`, JWT resync) |
 | **V1.3** | branche `feat/v1-3-book-copies` | **Refactor `Book` → `Book` (œuvre) + `BookCopy` (exemplaire)**. Multi-formats par fiche, dédup à l'ajout (ISBN strict puis slug titre+auteur), modale de fusion vs fiche distincte, blocage 409 sur conflit format/owner. DB resetée. Plan : `docs/superpowers/plans/2026-05-06-doublons-multiformats.md`. Spec : `docs/superpowers/specs/2026-05-06-doublons-multiformats-design.md`. |
+| Fix | `35181c9` | Couvertures haute résolution (Google Books `zoom=0`, retire `edge=curl`, helper `lib/cover-url.ts` utilisé en API et au rendu). |
+| **V1.4** | branche `feat/v1-4-mes-lectures` | **Mes Lectures** : sélecteur 4 chips sur la fiche (`Aucun · À lire · En cours · Lu`), bookmark rapide sur les BookCard pour la wishlist, page `/mes-lectures` avec 3 onglets et compteurs. Privé strict. Plan : `docs/superpowers/plans/2026-05-06-mes-lectures.md`. Spec : `docs/superpowers/specs/2026-05-06-mes-lectures-design.md`. |
 
 ## Surface fonctionnelle
 
@@ -28,7 +30,7 @@
 /bibliotheque/[id]              fiche livre
 /bibliotheque/[id]/modifier     édition fiche (auteur ou admin)
 /mes-livres                     livres ajoutés par l'utilisateur
-/mes-lectures                   placeholder V0 (aucune logique métier encore)
+/mes-lectures                   3 onglets À lire / En cours / Lu (?tab=...) avec compteurs
 /pret                           demandes envoyées + reçues
 /profil                         nom éditable + email + rôle + déconnexion
 /admin/membres                  liste users + invitation + toggle rôle
@@ -48,6 +50,9 @@ GET    /api/books/[id]/download?format=EPUB   stream natif Web, attachment, 404 
 POST   /api/books/match                       lookup ISBN/slug, retourne match | null (V1.3)
 POST   /api/books/[id]/copies                 ajoute une copie à un Book existant (V1.3)
 DELETE /api/books/[id]/copies/[cid]           supprime une copie (cascade Book si dernière) (V1.3)
+PUT    /api/readings/[bookId]                 upsert statut Reading (TO_READ | READING | READ) (V1.4)
+DELETE /api/readings/[bookId]                 retire la Reading (idempotent) (V1.4)
+GET    /api/readings                          3 listes groupées (toRead, reading, read) (V1.4)
 POST   /api/uploads                           dépôt EPUB/PDF (validation magic bytes)
 POST   /api/covers                            upload couverture (JPG/PNG/WEBP)
 GET    /api/covers/[...path]                  sert les couvertures (auth requise)
