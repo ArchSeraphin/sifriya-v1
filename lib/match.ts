@@ -5,6 +5,8 @@
 // quand l'ISBN n'est pas renseigne. ISBN reste la cle primaire d'œuvre.
 // =====================================================================
 
+import type { PrismaClient } from "@prisma/client"
+
 export function computeMatchKey(title: string, author: string | null | undefined): string {
   const norm = (s: string) =>
     s
@@ -33,15 +35,16 @@ export type BookMatch = {
 
 // Cherche un Book existant correspondant a l'œuvre proposee.
 // Priorite : ISBN strict -> matchKey.
-export async function findMatchingBook(input: {
-  title: string
-  author?: string | null
-  isbn?: string | null
-}): Promise<BookMatch | null> {
-  // Import dynamique pour eviter que db.ts (qui requiert DATABASE_URL) soit
-  // charge lors des smoke tests qui n'utilisent que les fonctions pures.
-  const { db } = await import("@/lib/db")
-
+// `db` est injecte en parametre pour que match.ts reste sans side-effect a
+// l'import (le smoke test importe les fonctions pures sans charger lib/db.ts).
+export async function findMatchingBook(
+  db: Pick<PrismaClient, "book">,
+  input: {
+    title: string
+    author?: string | null
+    isbn?: string | null
+  }
+): Promise<BookMatch | null> {
   const isbn = normalizeIsbn(input.isbn)
   if (isbn) {
     const byIsbn = await db.book.findFirst({

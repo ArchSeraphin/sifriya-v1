@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Donnees invalides." }, { status: 400 })
   }
 
-  const match = await findMatchingBook(parsed.data)
+  const match = await findMatchingBook(db, parsed.data)
   if (!match) return NextResponse.json({ match: null })
 
   const book = await db.book.findUnique({
