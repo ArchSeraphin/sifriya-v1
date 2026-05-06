@@ -6,13 +6,14 @@ import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { ListQuery, orderByForSort, PUBLIC_BOOK_SELECT } from "@/lib/books"
 import { commitPending } from "@/lib/storage"
+import { computeMatchKey, normalizeIsbn } from "@/lib/match"
 import { logger } from "@/lib/logger"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 // =====================================================================
-// GET /api/books — liste paginee + filtres
+// GET /api/books — liste paginee + filtres (multi-formats)
 // =====================================================================
 
 export async function GET(req: Request) {
@@ -27,16 +28,28 @@ export async function GET(req: Request) {
   const { q, type, format, sort, ownerId, addedById, page, limit } = parsed.data
 
   const where: Prisma.BookWhereInput = {}
-  if (type) where.type = type
-  if (format) where.format = format
-  if (ownerId) where.ownerId = ownerId
-  if (addedById) where.addedById = addedById
   if (q) {
     where.OR = [
       { title: { contains: q, mode: "insensitive" } },
       { author: { contains: q, mode: "insensitive" } },
       { isbn: { contains: q, mode: "insensitive" } }
     ]
+  }
+
+  // Filtres copies — combines via copies.some({...})
+  const copyFilters: Prisma.BookCopyWhereInput = {}
+  if (type) copyFilters.type = type
+  if (format) {
+    copyFilters.type = "DIGITAL"
+    copyFilters.format = format
+  }
+  if (ownerId) {
+    copyFilters.type = "PHYSICAL"
+    copyFilters.ownerId = ownerId
+  }
+  if (addedById) copyFilters.addedById = addedById
+  if (Object.keys(copyFilters).length > 0) {
+    where.copies = { some: copyFilters }
   }
 
   const [total, books] = await Promise.all([
@@ -55,7 +68,7 @@ export async function GET(req: Request) {
 }
 
 // =====================================================================
-// POST /api/books — cree un livre numerique a partir d'un upload pending
+// POST /api/books — cree un Book + 1ere BookCopy (transaction)
 // =====================================================================
 
 // On accepte une URL externe (https://) ou un chemin servi par notre API
@@ -82,18 +95,18 @@ const Common = z.object({
   externalId: z.string().trim().max(200).optional().nullable()
 })
 
-const DigitalBody = Common.extend({
-  type: z.literal("DIGITAL").optional().default("DIGITAL"),
+const DigitalCreate = Common.extend({
+  copyType: z.literal("DIGITAL"),
   uploadId: z.string().min(8).max(64),
   format: z.enum(["EPUB", "PDF"]),
   fileSize: z.number().int().min(1)
 })
 
-const PhysicalBody = Common.extend({
-  type: z.literal("PHYSICAL")
+const PhysicalCreate = Common.extend({
+  copyType: z.literal("PHYSICAL")
 })
 
-const CreateBody = z.discriminatedUnion("type", [DigitalBody, PhysicalBody])
+const CreateBody = z.discriminatedUnion("copyType", [DigitalCreate, PhysicalCreate])
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
@@ -115,78 +128,136 @@ export async function POST(req: Request) {
   }
   const data = parsed.data
 
-  if (data.type === "PHYSICAL") {
-    const book = await db.book.create({
-      data: {
-        title: data.title,
-        author: data.author ?? null,
-        isbn: data.isbn ?? null,
-        description: data.description ?? null,
-        genre: data.genre ?? null,
-        year: data.year ?? null,
-        publisher: data.publisher ?? null,
-        language: data.language ?? "fr",
-        coverUrl: data.coverUrl ?? null,
-        type: "PHYSICAL",
-        format: null,
-        filePath: null,
-        fileSize: null,
-        sourceApi: data.sourceApi ?? null,
-        externalId: data.externalId ?? null,
-        addedById: session.user.id,
-        ownerId: session.user.id
-      },
-      select: PUBLIC_BOOK_SELECT
-    })
-    return NextResponse.json({ book }, { status: 201 })
+  const isbn = normalizeIsbn(data.isbn)
+  const matchKey = computeMatchKey(data.title, data.author ?? null)
+
+  if (data.copyType === "DIGITAL") {
+    const ext = data.format.toLowerCase() as "epub" | "pdf"
+    let bookId: string | null = null
+    let copyId: string | null = null
+    try {
+      const created = await db.$transaction(async (tx) => {
+        const book = await tx.book.create({
+          data: {
+            title: data.title,
+            author: data.author ?? null,
+            isbn,
+            description: data.description ?? null,
+            genre: data.genre ?? null,
+            year: data.year ?? null,
+            publisher: data.publisher ?? null,
+            language: data.language ?? "fr",
+            coverUrl: data.coverUrl ?? null,
+            sourceApi: data.sourceApi ?? null,
+            externalId: data.externalId ?? null,
+            matchKey
+          },
+          select: { id: true }
+        })
+        const copy = await tx.bookCopy.create({
+          data: {
+            bookId: book.id,
+            type: "DIGITAL",
+            format: data.format,
+            fileSize: data.fileSize,
+            filePath: "pending",
+            addedById: session.user.id
+          },
+          select: { id: true }
+        })
+        return { bookId: book.id, copyId: copy.id }
+      })
+      bookId = created.bookId
+      copyId = created.copyId
+
+      const finalKey = await commitPending({
+        pendingId: data.uploadId,
+        ext,
+        finalKey: `copies/${copyId}.${ext}`
+      })
+      await db.bookCopy.update({
+        where: { id: copyId },
+        data: { filePath: finalKey }
+      })
+
+      const book = await db.book.findUnique({
+        where: { id: bookId },
+        select: PUBLIC_BOOK_SELECT
+      })
+      return NextResponse.json({ book }, { status: 201 })
+    } catch (err) {
+      logger.error("create digital book failed", { err: String(err) })
+      if (bookId) {
+        await db.book.delete({ where: { id: bookId } }).catch(() => {})
+      }
+      if (isUniqueViolation(err)) {
+        return NextResponse.json(
+          { error: "Un livre avec ce ISBN existe deja." },
+          { status: 409 }
+        )
+      }
+      return NextResponse.json(
+        { error: "Impossible d'enregistrer le livre. Reessayez l'envoi du fichier." },
+        { status: 500 }
+      )
+    }
   }
 
-  // DIGITAL : Cree d'abord le Book pour avoir l'ID, puis on commite le fichier
-  // vers books/${id}.${ext}. Rollback si echec.
-  const ext = data.format.toLowerCase() as "epub" | "pdf"
-  let bookId: string | null = null
+  // PHYSICAL
   try {
-    const book = await db.book.create({
-      data: {
-        title: data.title,
-        author: data.author ?? null,
-        isbn: data.isbn ?? null,
-        description: data.description ?? null,
-        genre: data.genre ?? null,
-        year: data.year ?? null,
-        publisher: data.publisher ?? null,
-        language: data.language ?? "fr",
-        coverUrl: data.coverUrl ?? null,
-        type: "DIGITAL",
-        format: data.format,
-        fileSize: data.fileSize,
-        sourceApi: data.sourceApi ?? null,
-        externalId: data.externalId ?? null,
-        addedById: session.user.id,
-        filePath: "pending"
-      },
-      select: { id: true }
+    const book = await db.$transaction(async (tx) => {
+      const b = await tx.book.create({
+        data: {
+          title: data.title,
+          author: data.author ?? null,
+          isbn,
+          description: data.description ?? null,
+          genre: data.genre ?? null,
+          year: data.year ?? null,
+          publisher: data.publisher ?? null,
+          language: data.language ?? "fr",
+          coverUrl: data.coverUrl ?? null,
+          sourceApi: data.sourceApi ?? null,
+          externalId: data.externalId ?? null,
+          matchKey
+        },
+        select: { id: true }
+      })
+      await tx.bookCopy.create({
+        data: {
+          bookId: b.id,
+          type: "PHYSICAL",
+          ownerId: session.user.id,
+          addedById: session.user.id
+        }
+      })
+      return b
     })
-    bookId = book.id
-    const finalKey = await commitPending({
-      pendingId: data.uploadId,
-      ext,
-      finalKey: `books/${book.id}.${ext}`
-    })
-    const updated = await db.book.update({
+    const full = await db.book.findUnique({
       where: { id: book.id },
-      data: { filePath: finalKey },
       select: PUBLIC_BOOK_SELECT
     })
-    return NextResponse.json({ book: updated }, { status: 201 })
+    return NextResponse.json({ book: full }, { status: 201 })
   } catch (err) {
-    logger.error("create book failed", { err: String(err) })
-    if (bookId) {
-      await db.book.delete({ where: { id: bookId } }).catch(() => {})
+    logger.error("create physical book failed", { err: String(err) })
+    if (isUniqueViolation(err)) {
+      return NextResponse.json(
+        { error: "Un livre avec ce ISBN existe deja." },
+        { status: 409 }
+      )
     }
     return NextResponse.json(
-      { error: "Impossible d'enregistrer le livre. Reessayez l'envoi du fichier." },
+      { error: "Impossible d'enregistrer le livre." },
       { status: 500 }
     )
   }
+}
+
+function isUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code?: string }).code === "P2002"
+  )
 }
