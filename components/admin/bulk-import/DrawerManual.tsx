@@ -5,17 +5,24 @@ import { Input } from "@/components/ui/Input"
 import { Button } from "@/components/ui/Button"
 import type { ItemForUI } from "./ImportClient"
 
-type Props = { item: ItemForUI; sessionId: string; onUpdated: () => void }
+type Props = { item: ItemForUI; sessionId: string; onUpdated: () => void; onAdvance: () => void }
 
-export function DrawerManual({ item, sessionId, onUpdated }: Props) {
+export function DrawerManual({ item, sessionId, onUpdated, onAdvance }: Props) {
   const [title, setTitle] = React.useState(item.extractedTitle ?? item.filename.replace(/\.(epub|pdf)$/i, ""))
   const [author, setAuthor] = React.useState(item.extractedAuthor ?? "")
   const [isbn, setIsbn] = React.useState(item.extractedIsbn ?? "")
   const [pending, setPending] = React.useState(false)
 
+  // Reset le formulaire quand on change d'item (auto-advance).
+  React.useEffect(() => {
+    setTitle(item.extractedTitle ?? item.filename.replace(/\.(epub|pdf)$/i, ""))
+    setAuthor(item.extractedAuthor ?? "")
+    setIsbn(item.extractedIsbn ?? "")
+  }, [item.id, item.extractedTitle, item.extractedAuthor, item.extractedIsbn, item.filename])
+
   const submit = async () => {
     setPending(true)
-    await fetch(`/api/admin/bulk-imports/${sessionId}/items/${item.id}`, {
+    const res = await fetch(`/api/admin/bulk-imports/${sessionId}/items/${item.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -28,18 +35,24 @@ export function DrawerManual({ item, sessionId, onUpdated }: Props) {
       })
     })
     setPending(false)
-    onUpdated()
+    if (res.ok) {
+      onUpdated()
+      onAdvance()
+    }
   }
 
   const skip = async () => {
     setPending(true)
-    await fetch(`/api/admin/bulk-imports/${sessionId}/items/${item.id}`, {
+    const res = await fetch(`/api/admin/bulk-imports/${sessionId}/items/${item.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ decision: "SKIP" })
     })
     setPending(false)
-    onUpdated()
+    if (res.ok) {
+      onUpdated()
+      onAdvance()
+    }
   }
 
   return (

@@ -13,6 +13,31 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   ERROR: { label: "Erreur", cls: "bg-[rgba(138,48,48,0.18)] text-[color:var(--err)]" }
 }
 
+// Quand l'admin a tranche, le badge reflete sa decision plutot que le status brut.
+// Status reste utilise comme fallback (decision NONE) ou pour ERROR/PENDING/PROCESSING.
+const DECISION_LABEL: Record<string, { label: string; cls: string }> = {
+  CREATE: { label: "Validé", cls: "bg-[rgba(74,107,62,0.12)] text-[color:var(--ok)]" },
+  MERGE: { label: "À merger", cls: "bg-accent-soft text-[#5a4711]" },
+  SKIP: { label: "Ignoré", cls: "bg-paper-2 text-ink-3" }
+}
+
+function badgeFor(item: ItemForUI): { label: string; cls: string } {
+  // 1) Item commit -> badge "Importé"
+  if (item.committedBookId) {
+    return { label: "Importé", cls: "bg-[rgba(74,107,62,0.18)] text-[color:var(--ok)]" }
+  }
+  // 2) Status terminal cote machine (rien a faire)
+  if (item.status === "ERROR" || item.status === "PENDING" || item.status === "PROCESSING") {
+    return STATUS_LABEL[item.status]!
+  }
+  // 3) Decision admin prise -> badge decision
+  if (item.decision !== "NONE" && DECISION_LABEL[item.decision]) {
+    return DECISION_LABEL[item.decision]!
+  }
+  // 4) Fallback : status machine
+  return STATUS_LABEL[item.status] ?? { label: item.status, cls: "bg-paper-2" }
+}
+
 export function ImportTableRow({
   item,
   sessionId
@@ -20,7 +45,7 @@ export function ImportTableRow({
   item: ItemForUI
   sessionId: string
 }) {
-  const meta = STATUS_LABEL[item.status] ?? { label: item.status, cls: "bg-paper-2" }
+  const meta = badgeFor(item)
   const chosen = item.chosenCandidate as
     | { title?: string; author?: string | null }
     | null

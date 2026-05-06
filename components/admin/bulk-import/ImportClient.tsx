@@ -89,6 +89,10 @@ export function ImportClient({ sessionId, totalFiles, initialStatus }: Props) {
   ).length
 
   const openItem = items.find((i) => i.id === openItemId) ?? null
+
+  // Navigation Prev/Next dans le drawer : on parcourt les items du meme status
+  // d'origine, sans filtre sur la decision (l'admin peut vouloir revenir sur un
+  // item deja valide pour le modifier).
   const sameStatusItems = openItem ? items.filter((i) => i.status === openItem.status) : []
   const idx = openItem ? sameStatusItems.findIndex((i) => i.id === openItem.id) : -1
   const onPrev = idx > 0 ? () => setOpenItemId(sameStatusItems[idx - 1]!.id) : null
@@ -96,6 +100,23 @@ export function ImportClient({ sessionId, totalFiles, initialStatus }: Props) {
     idx >= 0 && idx < sameStatusItems.length - 1
       ? () => setOpenItemId(sameStatusItems[idx + 1]!.id)
       : null
+
+  // Auto-advance apres validation : on cherche le prochain item du meme status
+  // qui n'a PAS encore de decision (decision NONE), apres l'index courant.
+  // Si rien trouve, le drawer se ferme.
+  const onAdvanceAfterDecision = React.useCallback(() => {
+    if (!openItem) return
+    const sameStatus = items.filter((i) => i.status === openItem.status)
+    const currentIdx = sameStatus.findIndex((i) => i.id === openItem.id)
+    const nextNone = sameStatus
+      .slice(currentIdx + 1)
+      .find((i) => i.decision === "NONE")
+    if (nextNone) {
+      setOpenItemId(nextNone.id)
+    } else {
+      setOpenItemId(null)
+    }
+  }, [openItem, items])
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 p-6">
@@ -127,6 +148,7 @@ export function ImportClient({ sessionId, totalFiles, initialStatus }: Props) {
           onPrev={onPrev}
           onNext={onNext}
           onUpdated={refetch}
+          onAdvance={onAdvanceAfterDecision}
         />
       ) : null}
     </div>

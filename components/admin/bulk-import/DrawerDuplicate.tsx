@@ -4,14 +4,14 @@ import * as React from "react"
 import { Button } from "@/components/ui/Button"
 import type { ItemForUI } from "./ImportClient"
 
-type Props = { item: ItemForUI; sessionId: string; onUpdated: () => void }
+type Props = { item: ItemForUI; sessionId: string; onUpdated: () => void; onAdvance: () => void }
 
-export function DrawerDuplicate({ item, sessionId, onUpdated }: Props) {
+export function DrawerDuplicate({ item, sessionId, onUpdated, onAdvance }: Props) {
   const [pending, setPending] = React.useState(false)
 
   const choose = async (decision: "MERGE" | "CREATE" | "SKIP") => {
     setPending(true)
-    await fetch(`/api/admin/bulk-imports/${sessionId}/items/${item.id}`, {
+    const res = await fetch(`/api/admin/bulk-imports/${sessionId}/items/${item.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -21,7 +21,10 @@ export function DrawerDuplicate({ item, sessionId, onUpdated }: Props) {
       })
     })
     setPending(false)
-    onUpdated()
+    if (res.ok) {
+      onUpdated()
+      onAdvance()
+    }
   }
 
   return (

@@ -19,35 +19,46 @@ type Cand = {
   genre: string | null
 }
 
-type Props = { item: ItemForUI; sessionId: string; onUpdated: () => void }
+type Props = { item: ItemForUI; sessionId: string; onUpdated: () => void; onAdvance: () => void }
 
-export function DrawerReview({ item, sessionId, onUpdated }: Props) {
+export function DrawerReview({ item, sessionId, onUpdated, onAdvance }: Props) {
   const candidates = (item.candidatesJson as Cand[] | null) ?? []
   const [picked, setPicked] = React.useState<string | null>(null)
   const [pending, setPending] = React.useState(false)
+
+  // Reset le candidat selectionne quand on change d'item (auto-advance).
+  React.useEffect(() => {
+    setPicked(null)
+  }, [item.id])
 
   const validate = async () => {
     if (!picked) return
     setPending(true)
     const cand = candidates.find((c) => c.externalId === picked)
-    await fetch(`/api/admin/bulk-imports/${sessionId}/items/${item.id}`, {
+    const res = await fetch(`/api/admin/bulk-imports/${sessionId}/items/${item.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ decision: "CREATE", chosenCandidate: cand })
     })
     setPending(false)
-    onUpdated()
+    if (res.ok) {
+      onUpdated()
+      onAdvance()
+    }
   }
 
   const skip = async () => {
     setPending(true)
-    await fetch(`/api/admin/bulk-imports/${sessionId}/items/${item.id}`, {
+    const res = await fetch(`/api/admin/bulk-imports/${sessionId}/items/${item.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ decision: "SKIP" })
     })
     setPending(false)
-    onUpdated()
+    if (res.ok) {
+      onUpdated()
+      onAdvance()
+    }
   }
 
   return (

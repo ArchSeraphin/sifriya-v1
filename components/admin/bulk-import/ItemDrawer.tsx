@@ -15,9 +15,12 @@ type Props = {
   onPrev: (() => void) | null
   onNext: (() => void) | null
   onUpdated: () => void
+  // Appele par les drawer variants apres une decision admin (Valider / Ignorer / Merger).
+  // Saute au prochain item du meme status encore non decide, ou ferme le drawer.
+  onAdvance: () => void
 }
 
-export function ItemDrawer({ item, sessionId, onClose, onPrev, onNext, onUpdated }: Props) {
+export function ItemDrawer({ item, sessionId, onClose, onPrev, onNext, onUpdated, onAdvance }: Props) {
   React.useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose()
@@ -49,9 +52,9 @@ export function ItemDrawer({ item, sessionId, onClose, onPrev, onNext, onUpdated
 
       <div className="p-4">
         {item.status === "AUTO_OK" ? <DrawerAutoOk item={item} sessionId={sessionId} onUpdated={onUpdated} /> : null}
-        {item.status === "TO_REVIEW" ? <DrawerReview item={item} sessionId={sessionId} onUpdated={onUpdated} /> : null}
-        {item.status === "MANUAL" ? <DrawerManual item={item} sessionId={sessionId} onUpdated={onUpdated} /> : null}
-        {item.status === "DUPLICATE" ? <DrawerDuplicate item={item} sessionId={sessionId} onUpdated={onUpdated} /> : null}
+        {item.status === "TO_REVIEW" ? <DrawerReview item={item} sessionId={sessionId} onUpdated={onUpdated} onAdvance={onAdvance} /> : null}
+        {item.status === "MANUAL" ? <DrawerManual item={item} sessionId={sessionId} onUpdated={onUpdated} onAdvance={onAdvance} /> : null}
+        {item.status === "DUPLICATE" ? <DrawerDuplicate item={item} sessionId={sessionId} onUpdated={onUpdated} onAdvance={onAdvance} /> : null}
       </div>
 
       <footer className="sticky bottom-0 flex justify-between border-t border-[var(--rule-2)] bg-paper px-4 py-3 text-[11px] text-ink-3">
