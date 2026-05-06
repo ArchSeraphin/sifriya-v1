@@ -1,6 +1,9 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import type { Prisma } from "@prisma/client"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { ListQuery, orderByForSort, PUBLIC_BOOK_SELECT } from "@/lib/books"
 import { BookGrid } from "@/components/books/BookGrid"
@@ -32,6 +35,9 @@ export default async function BibliothequePage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) redirect("/login")
+
   const raw = flatten(await searchParams)
   const view = raw.view === "list" ? "list" : "grid"
   const parsed = ListQuery.safeParse(raw)
@@ -70,6 +76,15 @@ export default async function BibliothequePage({
     })
   ])
 
+  const readings = await db.reading.findMany({
+    where: {
+      userId: session.user.id,
+      bookId: { in: books.map((b) => b.id) }
+    },
+    select: { bookId: true, status: true }
+  })
+  const readingByBookId = new Map(readings.map((r) => [r.bookId, r.status] as const))
+
   const totalPages = Math.max(1, Math.ceil(total / params.limit))
   const hrefForPage = (n: number) => buildHref({ ...raw, page: String(n) })
 
@@ -94,7 +109,7 @@ export default async function BibliothequePage({
       ) : view === "list" ? (
         <BookList books={books} />
       ) : (
-        <BookGrid books={books} />
+        <BookGrid books={books} readingByBookId={readingByBookId} />
       )}
 
       <Pagination page={params.page} totalPages={totalPages} hrefForPage={hrefForPage} />
