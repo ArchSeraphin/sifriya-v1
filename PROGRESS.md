@@ -94,6 +94,13 @@ npx tsx scripts/dev-magic-link.ts toi@exemple.fr   # crée le user en USER si ab
 ```
 Coller l'URL imprimée dans le navigateur.
 
+**Cleanup uploads orphelins :**
+```bash
+npm run cleanup:pending                          # purge uploads/_pending/ (TTL 1h)
+PENDING_TTL_MS=60000 npm run cleanup:pending     # TTL 1min pour test
+```
+En prod (Coolify) : Scheduled Task `npm run cleanup:pending` toutes les heures.
+
 ## Variables d'environnement
 
 `.env.example` à jour. En dev local, `RESEND_API_KEY` peut rester vide — `lib/email.ts` logge alors les emails à la console (très pratique pour récupérer les liens accept/refuse de prêt).

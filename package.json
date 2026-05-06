@@ -13,6 +13,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "cleanup:pending": "tsx scripts/cleanup-pending.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

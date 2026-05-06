@@ -191,10 +191,7 @@ export async function POST(req: Request) {
         await db.book.delete({ where: { id: bookId } }).catch(() => {})
       }
       if (isUniqueViolation(err)) {
-        return NextResponse.json(
-          { error: "Un livre avec ce ISBN existe deja." },
-          { status: 409 }
-        )
+        return await isbnConflictResponse(isbn)
       }
       return NextResponse.json(
         { error: "Impossible d'enregistrer le livre. Reessayez l'envoi du fichier." },
@@ -241,10 +238,7 @@ export async function POST(req: Request) {
   } catch (err) {
     logger.error("create physical book failed", { err: String(err) })
     if (isUniqueViolation(err)) {
-      return NextResponse.json(
-        { error: "Un livre avec ce ISBN existe deja." },
-        { status: 409 }
-      )
+      return await isbnConflictResponse(isbn)
     }
     return NextResponse.json(
       { error: "Impossible d'enregistrer le livre." },
@@ -259,5 +253,21 @@ function isUniqueViolation(err: unknown): boolean {
     err !== null &&
     "code" in err &&
     (err as { code?: string }).code === "P2002"
+  )
+}
+
+// Cas frontiere : l'user a force "creer une fiche distincte" malgre un match
+// suggere, mais l'ISBN entre est en conflit avec un Book existant. On lui
+// renvoie le bookId pour qu'il puisse basculer dessus cote client.
+async function isbnConflictResponse(isbn: string | null) {
+  const existing = isbn
+    ? await db.book.findFirst({ where: { isbn }, select: { id: true } })
+    : null
+  return NextResponse.json(
+    {
+      error: "Un livre avec ce ISBN existe deja.",
+      conflictBookId: existing?.id ?? null
+    },
+    { status: 409 }
   )
 }

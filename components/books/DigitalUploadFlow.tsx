@@ -66,6 +66,9 @@ export function DigitalUploadFlow({ onClose, onCancel }: Props) {
   const [error, setError] = React.useState<string | null>(null)
   const [matchedBook, setMatchedBook] = React.useState<import("@/lib/books").BookListed | null>(null)
   const [matchedBookId, setMatchedBookId] = React.useState<string | null>(null)
+  // Set quand le serveur retourne 409 avec conflictBookId (ISBN deja pris).
+  // Permet a l'user de basculer sur la fiche existante en un click.
+  const [conflictBookId, setConflictBookId] = React.useState<string | null>(null)
 
   const startUpload = async (file: File) => {
     setError(null)
@@ -179,8 +182,11 @@ export function DigitalUploadFlow({ onClose, onCancel }: Props) {
     })
     setPending(false)
     if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as { error?: string } | null
+      const body = (await res
+        .json()
+        .catch(() => null)) as { error?: string; conflictBookId?: string | null } | null
       setError(body?.error ?? "Echec de l'enregistrement.")
+      setConflictBookId(body?.conflictBookId ?? null)
       return
     }
     onClose()
@@ -233,6 +239,16 @@ export function DigitalUploadFlow({ onClose, onCancel }: Props) {
         upload={upload}
         pending={pending}
         error={error}
+        conflictBookId={conflictBookId}
+        onConflictMerge={
+          conflictBookId
+            ? () => {
+                const id = conflictBookId
+                setConflictBookId(null)
+                void submitMerge(id)
+              }
+            : undefined
+        }
         onBack={() => setStep("match")}
         onSubmit={onSubmit}
       />
@@ -402,6 +418,8 @@ function FormStep({
   upload,
   pending,
   error,
+  conflictBookId,
+  onConflictMerge,
   onBack,
   onSubmit
 }: {
@@ -410,6 +428,8 @@ function FormStep({
   upload: UploadResult
   pending: boolean
   error: string | null
+  conflictBookId: string | null
+  onConflictMerge?: () => void
   onBack: () => void
   onSubmit: (e: React.FormEvent) => void
 }) {
@@ -468,7 +488,22 @@ function FormStep({
           </p>
         </div>
       ) : null}
-      {error ? <p className="text-[13px] text-[color:var(--err)]">{error}</p> : null}
+      {error ? (
+        <div className="rounded-md border border-[rgba(138,48,48,0.2)] bg-[rgba(138,48,48,0.06)] p-3">
+          <p className="text-[13px] text-[color:var(--err)]">{error}</p>
+          {conflictBookId && onConflictMerge ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onConflictMerge}
+              disabled={pending}
+              className="mt-2"
+            >
+              Ajouter ma copie a la fiche existante
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
       <div className="flex items-center justify-between pt-2">
         <Button variant="ghost" onClick={onBack} disabled={pending}>
           <ArrowLeft size={14} />

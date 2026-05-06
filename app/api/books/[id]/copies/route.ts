@@ -53,6 +53,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const data = parsed.data
 
   if (data.type === "DIGITAL") {
+    // Check applicatif d'unicite (bookId, format) — pas d'index unique partiel
+    // en DB. Race condition theorique : 2 uploads simultanes du meme format
+    // peuvent passer le findFirst en parallele. Risque accepte pour V1 (50-100
+    // users) — au pire, 2 BookCopy DIGITAL identiques, l'admin peut nettoyer.
+    // Si volume augmente, ajouter une migration SQL : CREATE UNIQUE INDEX ...
+    // ON "BookCopy" ("bookId", format) WHERE type = 'DIGITAL'.
     const existing = await db.bookCopy.findFirst({
       where: { bookId, type: "DIGITAL", format: data.format },
       select: { id: true }
@@ -106,6 +112,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   }
 
   // PHYSICAL — conflit : meme (bookId, ownerId, type=PHYSICAL) deja present ?
+  // Meme race condition acceptee que pour DIGITAL. Si volume augmente, ajouter :
+  // CREATE UNIQUE INDEX ... ON "BookCopy" ("bookId", "ownerId") WHERE type = 'PHYSICAL'.
   const existingPhysical = await db.bookCopy.findFirst({
     where: { bookId, type: "PHYSICAL", ownerId: session.user.id },
     select: { id: true }
