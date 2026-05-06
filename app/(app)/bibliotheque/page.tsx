@@ -40,14 +40,23 @@ export default async function BibliothequePage({
     : ListQuery.parse({})
 
   const where: Prisma.BookWhereInput = {}
-  if (params.type) where.type = params.type
-  if (params.format) where.format = params.format
   if (params.q) {
     where.OR = [
       { title: { contains: params.q, mode: "insensitive" } },
       { author: { contains: params.q, mode: "insensitive" } },
       { isbn: { contains: params.q, mode: "insensitive" } }
     ]
+  }
+
+  // type et format sont sur BookCopy — filtrer via copies.some({...})
+  const copyFilters: Prisma.BookCopyWhereInput = {}
+  if (params.type) copyFilters.type = params.type
+  if (params.format) {
+    copyFilters.type = "DIGITAL"
+    copyFilters.format = params.format
+  }
+  if (Object.keys(copyFilters).length > 0) {
+    where.copies = { some: copyFilters }
   }
 
   const [total, books] = await Promise.all([
