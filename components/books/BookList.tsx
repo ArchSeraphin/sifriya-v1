@@ -1,9 +1,21 @@
 import Link from "next/link"
-import { Badge } from "@/components/ui/Badge"
-import { formatBytes } from "@/lib/books"
+import { digitalFormats, physicalCount } from "@/lib/books"
 import type { BookListed } from "@/lib/books"
 
 const dateFmt = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" })
+
+function FormatsCell({ book }: { book: BookListed }) {
+  const formats = digitalFormats(book)
+  const physicals = physicalCount(book)
+  const parts: string[] = [...formats]
+  if (physicals > 0) parts.push(physicals === 1 ? "Physique" : `Physique x ${physicals}`)
+  if (parts.length === 0) return <span className="text-ink-4">—</span>
+  return (
+    <span className="font-mono text-[12px] uppercase tracking-widest text-ink-2">
+      {parts.join(" · ")}
+    </span>
+  )
+}
 
 export function BookList({ books }: { books: BookListed[] }) {
   return (
@@ -13,8 +25,7 @@ export function BookList({ books }: { books: BookListed[] }) {
           <tr className="border-b border-[var(--rule-2)]">
             <th className="px-4 py-3 font-medium">Titre</th>
             <th className="px-4 py-3 font-medium">Auteur</th>
-            <th className="px-4 py-3 font-medium">Format</th>
-            <th className="px-4 py-3 font-medium">Taille</th>
+            <th className="px-4 py-3 font-medium">Formats</th>
             <th className="px-4 py-3 font-medium">Ajoute</th>
           </tr>
         </thead>
@@ -31,15 +42,11 @@ export function BookList({ books }: { books: BookListed[] }) {
                 >
                   {book.title}
                 </Link>
-                {book.type === "PHYSICAL" ? (
-                  <Badge tone="warn" className="ml-2 align-middle">
-                    Physique
-                  </Badge>
-                ) : null}
               </td>
               <td className="px-4 py-3 text-ink-2">{book.author ?? "—"}</td>
-              <td className="px-4 py-3 font-mono text-[12px] text-ink-3">{book.format ?? "—"}</td>
-              <td className="px-4 py-3 text-ink-3">{formatBytes(book.fileSize)}</td>
+              <td className="px-4 py-3">
+                <FormatsCell book={book} />
+              </td>
               <td className="px-4 py-3 text-ink-3">{dateFmt.format(book.addedAt)}</td>
             </tr>
           ))}

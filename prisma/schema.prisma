@@ -1,7 +1,6 @@
 // Sifriya — schema Prisma
-// Source de verite : CLAUDE.md section 4. Ne pas devier.
+// Source de verite : CLAUDE.md section 4 + docs/superpowers/specs/2026-05-06-doublons-multiformats-design.md (V1.3).
 
-// Prisma 7 : la connexion vit dans prisma.config.ts ; ici on declare seulement le provider.
 generator client {
   provider = "prisma-client-js"
 }
@@ -62,14 +61,14 @@ model User {
   accounts      Account[]
   sessions      Session[]
 
-  ownedBooks    Book[]    @relation("BookOwner")
-  addedBooks    Book[]    @relation("BookAdder")
-  loanRequests  Loan[]    @relation("LoanRequester")
-  loansReceived Loan[]    @relation("LoanOwner")
+  ownedCopies   BookCopy[] @relation("CopyOwner")
+  addedCopies   BookCopy[] @relation("CopyAdder")
+  loanRequests  Loan[]     @relation("LoanRequester")
+  loansReceived Loan[]     @relation("LoanOwner")
   readings      Reading[]
-  invitedBy     User?     @relation("UserInvites", fields: [invitedById], references: [id])
+  invitedBy     User?      @relation("UserInvites", fields: [invitedById], references: [id])
   invitedById   String?
-  invitedUsers  User[]    @relation("UserInvites")
+  invitedUsers  User[]     @relation("UserInvites")
 }
 
 enum Role {
@@ -78,41 +77,58 @@ enum Role {
 }
 
 model Book {
-  id          String      @id @default(cuid())
-  title       String
-  author      String?
-  isbn        String?
-  coverUrl    String?
-  description String?     @db.Text
-  genre       String?
-  year        Int?
-  publisher   String?
-  language    String?     @default("fr")
-  type        BookType    @default(DIGITAL)
-  format      FileFormat?
-  filePath    String?
-  fileSize    Int?
-  sourceApi   String?
-  externalId  String?
-  addedAt     DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id           String     @id @default(cuid())
+  title        String
+  author       String?
+  isbn         String?    @unique
+  description  String?    @db.Text
+  genre        String?
+  year         Int?
+  publisher    String?
+  language     String?    @default("fr")
+  coverUrl     String?
+  sourceApi    String?
+  externalId   String?
+  matchKey     String
+  addedAt      DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  addedById   String
-  addedBy     User        @relation("BookAdder", fields: [addedById], references: [id])
+  copies       BookCopy[]
+  readings     Reading[]
 
-  ownerId     String?
-  owner       User?       @relation("BookOwner", fields: [ownerId], references: [id])
-
-  loans       Loan[]
-  readings    Reading[]
-
+  @@index([matchKey])
   @@index([title])
   @@index([author])
-  @@index([type])
   @@index([addedAt])
 }
 
-enum BookType {
+model BookCopy {
+  id          String      @id @default(cuid())
+  bookId      String
+  book        Book        @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  type        CopyType
+
+  format      FileFormat?
+  filePath    String?
+  fileSize    Int?
+
+  ownerId     String?
+  owner       User?       @relation("CopyOwner", fields: [ownerId], references: [id])
+
+  addedById   String
+  addedBy     User        @relation("CopyAdder", fields: [addedById], references: [id])
+  addedAt     DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  loans       Loan[]
+
+  @@index([bookId])
+  @@index([ownerId])
+  @@index([addedById])
+}
+
+enum CopyType {
   DIGITAL
   PHYSICAL
 }
@@ -124,8 +140,8 @@ enum FileFormat {
 
 model Loan {
   id          String     @id @default(cuid())
-  bookId      String
-  book        Book       @relation(fields: [bookId], references: [id])
+  copyId      String
+  copy        BookCopy   @relation(fields: [copyId], references: [id], onDelete: Cascade)
   requesterId String
   requester   User       @relation("LoanRequester", fields: [requesterId], references: [id])
   ownerId     String
@@ -139,6 +155,7 @@ model Loan {
 
   @@index([requesterId])
   @@index([ownerId])
+  @@index([copyId])
   @@index([status])
 }
 
@@ -152,9 +169,9 @@ enum LoanStatus {
 model Reading {
   id        String        @id @default(cuid())
   userId    String
-  user      User          @relation(fields: [userId], references: [id])
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookId    String
-  book      Book          @relation(fields: [bookId], references: [id])
+  book      Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
   status    ReadingStatus @default(TO_READ)
   addedAt   DateTime      @default(now())
   updatedAt DateTime      @updatedAt

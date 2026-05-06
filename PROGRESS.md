@@ -16,6 +16,7 @@
 | Feature | `017b62b` | API **BnF SRU** + pagination "Charger plus" sur les recherches métadonnées |
 | Fix | `603da82` | `loadMore` null state (capture via `stateRef` au lieu d'un setState lecteur) |
 | Feature | `a4245ac` | Édition du nom affiché sur `/profil` (`PATCH /api/me`, JWT resync) |
+| **V1.3** | branche `feat/v1-3-book-copies` | **Refactor `Book` → `Book` (œuvre) + `BookCopy` (exemplaire)**. Multi-formats par fiche, dédup à l'ajout (ISBN strict puis slug titre+auteur), modale de fusion vs fiche distincte, blocage 409 sur conflit format/owner. DB resetée. Plan : `docs/superpowers/plans/2026-05-06-doublons-multiformats.md`. Spec : `docs/superpowers/specs/2026-05-06-doublons-multiformats-design.md`. |
 
 ## Surface fonctionnelle
 
@@ -35,29 +36,32 @@
 
 ### API (toutes les routes sont dynamiques, sous `/api/...`)
 ```
-GET  /api/health                  liveness + DB ping
-GET  /api/auth/[...nextauth]      NextAuth (email magic link)
-PATCH /api/me                     édition nom utilisateur (Zod strict)
-GET  /api/books                   liste paginée + filtres q/type/format/sort
-POST /api/books                   crée DIGITAL (uploadId) ou PHYSICAL
-GET  /api/books/[id]              fiche
-PATCH /api/books/[id]             édition métadonnées (auteur ou admin)
-DELETE /api/books/[id]            suppression + delete fichier
-GET  /api/books/[id]/download     stream natif Web, attachment
-POST /api/uploads                 dépôt EPUB/PDF (validation magic bytes)
-POST /api/covers                  upload couverture (JPG/PNG/WEBP)
-GET  /api/covers/[...path]        sert les couvertures (auth requise)
-GET  /api/metadata                recherche Google + BnF + OL, paginée
-POST /api/loans                   demande prêt + email JWT 72h
-GET  /api/loans                   sent + received
-GET  /api/loans/[id]/respond      atterrissage email (HTML public)
-PATCH /api/loans/[id]/return      owner marque comme rendu
-POST /api/admin/invites           crée user + magic link (admin only)
-PATCH /api/admin/users/[id]       toggle rôle (admin only)
+GET    /api/health                            liveness + DB ping
+GET    /api/auth/[...nextauth]                NextAuth (email magic link)
+PATCH  /api/me                                édition nom utilisateur (Zod strict)
+GET    /api/books                             liste paginée + filtres (filtres traduits via copies.some)
+POST   /api/books                             crée Book + 1ère BookCopy (DIGITAL avec uploadId, ou PHYSICAL)
+GET    /api/books/[id]                        fiche (inclut copies[])
+PATCH  /api/books/[id]                        édition métadonnées Book (addedBy d'au moins une copie + admin)
+DELETE /api/books/[id]                        admin only (route nucléaire, normalement on supprime via copie)
+GET    /api/books/[id]/download?format=EPUB   stream natif Web, attachment, 404 si format absent
+POST   /api/books/match                       lookup ISBN/slug, retourne match | null (V1.3)
+POST   /api/books/[id]/copies                 ajoute une copie à un Book existant (V1.3)
+DELETE /api/books/[id]/copies/[cid]           supprime une copie (cascade Book si dernière) (V1.3)
+POST   /api/uploads                           dépôt EPUB/PDF (validation magic bytes)
+POST   /api/covers                            upload couverture (JPG/PNG/WEBP)
+GET    /api/covers/[...path]                  sert les couvertures (auth requise)
+GET    /api/metadata                          recherche Google + BnF + OL, paginée
+POST   /api/loans                             demande prêt sur copie physique (copyId) + email JWT 72h
+GET    /api/loans                             sent + received (traverse copy.book)
+GET    /api/loans/[id]/respond                atterrissage email (HTML public)
+PATCH  /api/loans/[id]/return                 owner marque comme rendu
+POST   /api/admin/invites                     crée user + magic link (admin only)
+PATCH  /api/admin/users/[id]                  toggle rôle (admin only)
 ```
 
 ### Modèle de données
-Conforme à `CLAUDE.md` section 4. Migration init : `prisma/migrations/20260505142536_init/`.
+V1.3 : `Book` (œuvre) ↔ `0..N BookCopy` (exemplaire numérique ou physique). `Loan.copyId`, `Reading.bookId` (avec cascade). Migration : `prisma/migrations/20260506094857_v1_3_book_copies_init/`. Détail : `docs/superpowers/specs/2026-05-06-doublons-multiformats-design.md`.
 
 ## Écarts vs `CLAUDE.md` (tous documentés en commit)
 
@@ -90,10 +94,6 @@ Coller l'URL imprimée dans le navigateur.
 `.env.example` à jour. En dev local, `RESEND_API_KEY` peut rester vide — `lib/email.ts` logge alors les emails à la console (très pratique pour récupérer les liens accept/refuse de prêt).
 
 ## Reste à faire (en attente de demande)
-
-**À arbitrer avec le user (identifié en prod, 2026-05-05) :**
-- **Doublons** : aucun garde-fou actuellement. Définir critère (ISBN ? titre+auteur normalisés ? hash de fichier ?) et UX (bloquer / confirmer / proposer "autre copie"). Cas légitime à préserver : même œuvre en NUMERIQUE + PHYSIQUE.
-- **Multi-formats** : aujourd'hui Candide EPUB + Candide PDF = 2 livres distincts. Refactor schéma possible : `Book` a `0..N BookFile` (chacun son format/filePath). Impact : migration data + refonte UploadFlow / BookDetail / API download. Décision schéma à prendre avant d'implémenter.
 
 **Polish potentiel non demandé :**
 - Extraction auto du titre depuis EPUB (jszip → OPF) / PDF (pdf-lib → info dict)

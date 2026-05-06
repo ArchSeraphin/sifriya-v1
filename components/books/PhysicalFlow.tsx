@@ -15,8 +15,9 @@ import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { useMetadataSearch } from "@/lib/use-metadata-search"
 import { MetadataResultsList } from "@/components/books/MetadataResultsList"
+import { DuplicateConfirmModal } from "@/components/books/DuplicateConfirmModal"
 
-type Step = "mode" | "isbn" | "search" | "form"
+type Step = "mode" | "isbn" | "search" | "form" | "duplicate"
 type Mode = "isbn" | "search" | "manual"
 
 type FormState = {
@@ -59,6 +60,8 @@ export function PhysicalFlow({ onClose, onCancel }: Props) {
   const [form, setForm] = React.useState<FormState>(EMPTY_FORM)
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [matchedBook, setMatchedBook] = React.useState<import("@/lib/books").BookListed | null>(null)
+  const [matchedBookId, setMatchedBookId] = React.useState<string | null>(null)
 
   const goManual = () => {
     setMode("manual")
@@ -99,13 +102,49 @@ export function PhysicalFlow({ onClose, onCancel }: Props) {
       setError("Le titre est obligatoire.")
       return
     }
-    setError(null)
     setPending(true)
+    setError(null)
+    // 1. Lookup match
+    const matchRes = await fetch("/api/books/match", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        title: form.title.trim(),
+        author: form.author.trim() || null,
+        isbn: form.isbn.trim() || null
+      })
+    })
+    setPending(false)
+    if (matchRes.ok) {
+      const body = (await matchRes.json()) as {
+        match: null | {
+          bookId: string
+          confidence: "high" | "low"
+          book: import("@/lib/books").BookListed
+        }
+      }
+      if (body.match?.confidence === "high") {
+        await submitMerge(body.match.bookId)
+        return
+      }
+      if (body.match?.confidence === "low") {
+        setMatchedBook(body.match.book)
+        setMatchedBookId(body.match.bookId)
+        setStep("duplicate")
+        return
+      }
+    }
+    await submitNew()
+  }
+
+  const submitNew = async () => {
+    setPending(true)
+    setError(null)
     const res = await fetch("/api/books", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        type: "PHYSICAL",
+        copyType: "PHYSICAL",
         title: form.title.trim(),
         author: form.author.trim() || null,
         isbn: form.isbn.trim() || null,
@@ -123,6 +162,25 @@ export function PhysicalFlow({ onClose, onCancel }: Props) {
     if (!res.ok) {
       const body = (await res.json().catch(() => null)) as { error?: string } | null
       setError(body?.error ?? "Echec de l'enregistrement.")
+      return
+    }
+    onClose()
+    router.refresh()
+  }
+
+  const submitMerge = async (bookId: string) => {
+    setPending(true)
+    setError(null)
+    const res = await fetch(`/api/books/${bookId}/copies`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ type: "PHYSICAL" })
+    })
+    setPending(false)
+    if (!res.ok) {
+      const body = (await res.json().catch(() => null)) as { error?: string } | null
+      setError(body?.error ?? "Echec de l'ajout.")
+      setStep("form")
       return
     }
     onClose()
@@ -152,6 +210,27 @@ export function PhysicalFlow({ onClose, onCancel }: Props) {
   if (step === "search") {
     return (
       <SearchStep onPick={onPick} onBack={() => setStep("mode")} />
+    )
+  }
+
+  if (step === "duplicate" && matchedBook && matchedBookId) {
+    return (
+      <DuplicateConfirmModal
+        book={matchedBook}
+        intentLabel="Declarer votre exemplaire physique"
+        onMerge={() => submitMerge(matchedBookId)}
+        onCreateNew={() => {
+          setMatchedBook(null)
+          setMatchedBookId(null)
+          void submitNew()
+        }}
+        onCancel={() => {
+          setMatchedBook(null)
+          setMatchedBookId(null)
+          setStep("form")
+        }}
+        pending={pending}
+      />
     )
   }
 

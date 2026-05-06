@@ -11,7 +11,7 @@ import crypto from "node:crypto"
 
 const ALLOWED_EXT = new Set(["epub", "pdf"])
 
-export type SaveOptions = { dir?: "books" | "covers" | "_pending" }
+export type SaveOptions = { dir?: "books" | "covers" | "copies" | "_pending" }
 
 function root(): string {
   return process.env.UPLOAD_DIR ?? "./uploads"

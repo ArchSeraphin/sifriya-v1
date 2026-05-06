@@ -32,8 +32,8 @@ export default async function EditBookPage({
   if (!book) notFound()
 
   const isAdmin = session.user.role === "ADMIN"
-  const isAuthor = book.addedBy.id === session.user.id
-  if (!isAdmin && !isAuthor) {
+  const isCopyOwner = book.copies.some((c) => c.addedBy.id === session.user.id)
+  if (!isAdmin && !isCopyOwner) {
     redirect(`/bibliotheque/${id}`)
   }
 

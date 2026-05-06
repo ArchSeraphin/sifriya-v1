@@ -1,4 +1,4 @@
-import type { Book, BookType, FileFormat, User } from "@prisma/client"
+import type { Book, BookCopy, CopyType, FileFormat, User } from "@prisma/client"
 import { z } from "zod"
 
 export const DEFAULT_PAGE_SIZE = 24
@@ -8,19 +8,14 @@ export type SortKeyT = z.infer<typeof SortKey>
 
 export const ListQuery = z.object({
   q: z.string().trim().max(200).optional().default(""),
+  // Filtres traduits cote API en where: { copies: { some: { type: "DIGITAL" } } } etc.
   type: z.enum(["DIGITAL", "PHYSICAL"]).optional(),
   format: z.enum(["EPUB", "PDF"]).optional(),
   sort: SortKey.optional().default("recent"),
   ownerId: z.string().optional(),
   addedById: z.string().optional(),
   page: z.coerce.number().int().min(1).optional().default(1),
-  limit: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(60)
-    .optional()
-    .default(DEFAULT_PAGE_SIZE)
+  limit: z.coerce.number().int().min(1).max(60).optional().default(DEFAULT_PAGE_SIZE)
 })
 export type ListQueryT = z.infer<typeof ListQuery>
 
@@ -34,28 +29,34 @@ export const orderByForSort = {
 // Serialiseur — n'expose JAMAIS filePath ni external info brute.
 // =====================================================================
 
-export type BookOwnerLite = Pick<User, "id" | "name" | "email" | "avatarColor">
+export type PersonLite = Pick<User, "id" | "name" | "email" | "avatarColor">
+
+export type CopyDTO = Pick<
+  BookCopy,
+  "id" | "type" | "format" | "fileSize" | "addedAt"
+> & {
+  owner: PersonLite | null
+  addedBy: PersonLite
+}
+
 export type BookListed = Pick<
   Book,
-  | "id"
-  | "title"
-  | "author"
-  | "isbn"
-  | "coverUrl"
-  | "genre"
-  | "year"
-  | "publisher"
-  | "language"
-  | "type"
-  | "format"
-  | "fileSize"
-  | "addedAt"
+  "id" | "title" | "author" | "isbn" | "coverUrl" | "genre" | "year" | "publisher" | "language" | "addedAt"
 > & {
-  owner: BookOwnerLite | null
-  addedBy: BookOwnerLite
+  copies: CopyDTO[]
 }
 
 export type BookDetailDTO = BookListed & { description: string | null }
+
+export const PUBLIC_COPY_SELECT = {
+  id: true,
+  type: true,
+  format: true,
+  fileSize: true,
+  addedAt: true,
+  owner: { select: { id: true, name: true, email: true, avatarColor: true } },
+  addedBy: { select: { id: true, name: true, email: true, avatarColor: true } }
+} as const
 
 export const PUBLIC_BOOK_SELECT = {
   id: true,
@@ -68,12 +69,11 @@ export const PUBLIC_BOOK_SELECT = {
   year: true,
   publisher: true,
   language: true,
-  type: true,
-  format: true,
-  fileSize: true,
   addedAt: true,
-  owner: { select: { id: true, name: true, email: true, avatarColor: true } },
-  addedBy: { select: { id: true, name: true, email: true, avatarColor: true } }
+  copies: {
+    select: PUBLIC_COPY_SELECT,
+    orderBy: { addedAt: "asc" }
+  }
 } as const
 
 // =====================================================================
@@ -92,6 +92,19 @@ export function formatLabel(format: FileFormat | null | undefined): string {
   return format
 }
 
-export function typeLabel(type: BookType): string {
+export function copyTypeLabel(type: CopyType): string {
   return type === "DIGITAL" ? "Numerique" : "Physique"
+}
+
+// Helpers pour BookListed -> chips d'affichage
+export function digitalFormats(book: { copies: { type: CopyType; format: FileFormat | null }[] }): FileFormat[] {
+  const set = new Set<FileFormat>()
+  for (const c of book.copies) {
+    if (c.type === "DIGITAL" && c.format) set.add(c.format)
+  }
+  return [...set].sort()
+}
+
+export function physicalCount(book: { copies: { type: CopyType }[] }): number {
+  return book.copies.filter((c) => c.type === "PHYSICAL").length
 }

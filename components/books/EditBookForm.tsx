@@ -159,9 +159,8 @@ export function EditBookForm({ book }: Props) {
       <div className="rounded-xl border border-[var(--rule)] bg-paper-2/40 p-4">
         <p className="text-[13px] font-medium text-ink-2">Couverture</p>
         <p className="text-[12px] text-ink-3">
-          {book.type === "PHYSICAL"
-            ? "Vous pouvez remplacer la couverture par une image (JPG, PNG ou WEBP, 5 Mo max)."
-            : "Detectee depuis Google Books / Open Library lors de l'ajout. Modifiable."}
+          Detectee depuis Google Books / Open Library lors de l&apos;ajout, ou
+          telechargee manuellement. Vous pouvez la remplacer par une image (JPG, PNG ou WEBP, 5 Mo max).
         </p>
         <div className="mt-3 flex items-start gap-3">
           <div className="h-24 w-16 shrink-0 overflow-hidden rounded-sm bg-paper-3">

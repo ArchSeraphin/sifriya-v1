@@ -32,7 +32,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   const loan = await db.loan.findUnique({
     where: { id },
     include: {
-      book: { select: { id: true, title: true } },
+      copy: { select: { book: { select: { id: true, title: true } } } },
       requester: { select: { id: true, email: true, name: true } },
       owner: { select: { id: true, name: true } }
     }
@@ -63,14 +63,14 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
       await sendLoanAccepted({
         requesterEmail: loan.requester.email,
         requesterName: loan.requester.name ?? loan.requester.email.split("@")[0]!,
-        bookTitle: loan.book.title,
+        bookTitle: loan.copy.book.title,
         ownerName: loan.owner.name ?? "Le proprietaire"
       })
     } else {
       await sendLoanRefused({
         requesterEmail: loan.requester.email,
         requesterName: loan.requester.name ?? loan.requester.email.split("@")[0]!,
-        bookTitle: loan.book.title
+        bookTitle: loan.copy.book.title
       })
     }
   } catch (err) {
