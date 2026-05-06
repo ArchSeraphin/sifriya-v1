@@ -23,7 +23,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 
   const physicalCopyIds = book.copies.filter((c) => c.type === "PHYSICAL").map((c) => c.id)
 
-  const [activeLoans, myRequests] = await Promise.all([
+  const [activeLoans, myRequests, currentReading] = await Promise.all([
     physicalCopyIds.length
       ? db.loan.findMany({
           where: {
@@ -47,7 +47,11 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
           },
           select: { id: true, copyId: true, status: true }
         })
-      : Promise.resolve([])
+      : Promise.resolve([]),
+    db.reading.findUnique({
+      where: { userId_bookId: { userId: session.user.id, bookId: id } },
+      select: { status: true }
+    })
   ])
 
   const activeLoansByCopy: Record<string, { id: string; status: "PENDING" | "ACCEPTED"; requester: typeof activeLoans[number]["requester"] }> = {}
@@ -65,6 +69,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
       currentUser={{ id: session.user.id, role: session.user.role }}
       activeLoansByCopy={activeLoansByCopy}
       myActiveRequestsByCopy={myActiveRequestsByCopy}
+      currentReading={currentReading}
     />
   )
 }
