@@ -32,6 +32,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string; i
       uploadId: true,
       filename: true,
       format: true,
+      committedBookId: true,
       session: { select: { ownerId: true, status: true } }
     }
   })
@@ -44,6 +45,9 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string; i
   if (item.session.status !== "IN_PROGRESS") {
     return NextResponse.json({ error: "Session cloturee." }, { status: 409 })
   }
+  if (item.committedBookId) {
+    return NextResponse.json({ error: "Item deja commite, impossible de re-processer." }, { status: 409 })
+  }
   if (!item.uploadId) {
     await db.bulkImportItem.update({
       where: { id: itemId },
@@ -52,7 +56,10 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string; i
     return NextResponse.json({ error: "Pending file manquant." }, { status: 422 })
   }
 
-  // Marquer PROCESSING tot pour que le polling client le voit
+  // Marquer PROCESSING tot pour que le polling client le voit.
+  // V1 : pas de garde contre process concurrent du meme item (admin-only, faible
+  // concurrence). En cas de besoin, ajouter `where: { id, status: { in: ["PENDING", "ERROR"] } }`
+  // + verifier le count.
   await db.bulkImportItem.update({
     where: { id: itemId },
     data: { status: "PROCESSING" }
