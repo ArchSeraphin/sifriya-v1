@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { LOAN_INCLUDE } from "@/lib/loans"
+import { LOAN_INCLUDE, type LoanWithRefs } from "@/lib/loans"
 import { LoanRow } from "@/components/loans/LoanRow"
 import { HandHelping } from "lucide-react"
 
@@ -23,12 +23,12 @@ export default async function PretPage() {
       where: { requesterId: userId },
       orderBy: { createdAt: "desc" },
       include: LOAN_INCLUDE
-    }),
+    }) as unknown as Promise<LoanWithRefs[]>,
     db.loan.findMany({
       where: { ownerId: userId },
       orderBy: { createdAt: "desc" },
       include: LOAN_INCLUDE
-    })
+    }) as unknown as Promise<LoanWithRefs[]>
   ])
 
   return (
@@ -66,7 +66,7 @@ function Column({
 }: {
   title: string
   empty: string
-  loans: Awaited<ReturnType<typeof db.loan.findMany>>
+  loans: LoanWithRefs[]
   perspective: "sent" | "received"
 }) {
   return (
@@ -82,8 +82,7 @@ function Column({
           {loans.map((loan) => (
             <LoanRow
               key={loan.id}
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              loan={loan as any}
+              loan={loan}
               perspective={perspective}
             />
           ))}

@@ -24,28 +24,29 @@ function toneFor(status: LoanWithRefs["status"]): Tone {
 export function LoanRow({ loan, perspective }: Props) {
   const counterpart = perspective === "sent" ? loan.owner : loan.requester
   const counterpartLabel = perspective === "sent" ? "Proprietaire" : "Demandeur"
+  const { book, format } = loan.copy
 
   return (
     <li className="flex items-start gap-4 rounded-2xl border border-[var(--rule)] bg-paper-2/40 p-4">
-      <Link href={`/bibliotheque/${loan.book.id}`} className="block w-16 shrink-0">
+      <Link href={`/bibliotheque/${book.id}`} className="block w-16 shrink-0">
         <Cover
-          title={loan.book.title}
-          author={loan.book.author}
-          format={loan.book.format}
-          src={loan.book.coverUrl}
+          title={book.title}
+          author={book.author}
+          format={format}
+          src={book.coverUrl}
         />
       </Link>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <Link
-              href={`/bibliotheque/${loan.book.id}`}
+              href={`/bibliotheque/${book.id}`}
               className="line-clamp-2 font-serif text-[15px] text-ink hover:underline"
             >
-              {loan.book.title}
+              {book.title}
             </Link>
-            {loan.book.author ? (
-              <p className="mt-0.5 line-clamp-1 text-[13px] text-ink-2">{loan.book.author}</p>
+            {book.author ? (
+              <p className="mt-0.5 line-clamp-1 text-[13px] text-ink-2">{book.author}</p>
             ) : null}
           </div>
           <Badge tone={toneFor(loan.status)}>{statusLabel(loan.status)}</Badge>
