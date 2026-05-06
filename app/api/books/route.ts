@@ -4,9 +4,13 @@ import type { Prisma } from "@prisma/client"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { ListQuery, orderByForSort, PUBLIC_BOOK_SELECT } from "@/lib/books"
-import { commitPending } from "@/lib/storage"
-import { computeMatchKey, normalizeIsbn } from "@/lib/match"
+import {
+  ListQuery,
+  orderByForSort,
+  PUBLIC_BOOK_SELECT,
+  createBookWithCopy
+} from "@/lib/books"
+import { normalizeIsbn } from "@/lib/match"
 import { logger } from "@/lib/logger"
 
 export const dynamic = "force-dynamic"
@@ -128,117 +132,40 @@ export async function POST(req: Request) {
   }
   const data = parsed.data
 
-  const isbn = normalizeIsbn(data.isbn)
-  const matchKey = computeMatchKey(data.title, data.author ?? null)
-
-  if (data.copyType === "DIGITAL") {
-    const ext = data.format.toLowerCase() as "epub" | "pdf"
-    let bookId: string | null = null
-    let copyId: string | null = null
-    try {
-      const created = await db.$transaction(async (tx) => {
-        const book = await tx.book.create({
-          data: {
-            title: data.title,
-            author: data.author ?? null,
-            isbn,
-            description: data.description ?? null,
-            genre: data.genre ?? null,
-            year: data.year ?? null,
-            publisher: data.publisher ?? null,
-            language: data.language ?? "fr",
-            coverUrl: data.coverUrl ?? null,
-            sourceApi: data.sourceApi ?? null,
-            externalId: data.externalId ?? null,
-            matchKey
-          },
-          select: { id: true }
-        })
-        const copy = await tx.bookCopy.create({
-          data: {
-            bookId: book.id,
-            type: "DIGITAL",
-            format: data.format,
-            fileSize: data.fileSize,
-            filePath: "pending",
-            addedById: session.user.id
-          },
-          select: { id: true }
-        })
-        return { bookId: book.id, copyId: copy.id }
-      })
-      bookId = created.bookId
-      copyId = created.copyId
-
-      const finalKey = await commitPending({
-        pendingId: data.uploadId,
-        ext,
-        finalKey: `copies/${copyId}.${ext}`
-      })
-      await db.bookCopy.update({
-        where: { id: copyId },
-        data: { filePath: finalKey }
-      })
-
-      const book = await db.book.findUnique({
-        where: { id: bookId },
-        select: PUBLIC_BOOK_SELECT
-      })
-      return NextResponse.json({ book }, { status: 201 })
-    } catch (err) {
-      logger.error("create digital book failed", { err: String(err) })
-      if (bookId) {
-        await db.book.delete({ where: { id: bookId } }).catch(() => {})
-      }
-      if (isUniqueViolation(err)) {
-        return await isbnConflictResponse(isbn)
-      }
-      return NextResponse.json(
-        { error: "Impossible d'enregistrer le livre. Reessayez l'envoi du fichier." },
-        { status: 500 }
-      )
-    }
-  }
-
-  // PHYSICAL
   try {
-    const book = await db.$transaction(async (tx) => {
-      const b = await tx.book.create({
-        data: {
-          title: data.title,
-          author: data.author ?? null,
-          isbn,
-          description: data.description ?? null,
-          genre: data.genre ?? null,
-          year: data.year ?? null,
-          publisher: data.publisher ?? null,
-          language: data.language ?? "fr",
-          coverUrl: data.coverUrl ?? null,
-          sourceApi: data.sourceApi ?? null,
-          externalId: data.externalId ?? null,
-          matchKey
-        },
-        select: { id: true }
-      })
-      await tx.bookCopy.create({
-        data: {
-          bookId: b.id,
-          type: "PHYSICAL",
-          ownerId: session.user.id,
-          addedById: session.user.id
-        }
-      })
-      return b
-    })
-    const full = await db.book.findUnique({
-      where: { id: book.id },
+    const { bookId } = await createBookWithCopy(
+      {
+        title: data.title,
+        author: data.author ?? null,
+        isbn: data.isbn ?? null,
+        description: data.description ?? null,
+        genre: data.genre ?? null,
+        year: data.year ?? null,
+        publisher: data.publisher ?? null,
+        language: data.language ?? null,
+        coverUrl: data.coverUrl ?? null,
+        sourceApi: data.sourceApi ?? null,
+        externalId: data.externalId ?? null
+      },
+      data.copyType === "DIGITAL"
+        ? {
+            type: "DIGITAL",
+            uploadId: data.uploadId,
+            format: data.format,
+            fileSize: data.fileSize
+          }
+        : { type: "PHYSICAL" },
+      session.user.id
+    )
+    const book = await db.book.findUnique({
+      where: { id: bookId },
       select: PUBLIC_BOOK_SELECT
     })
-    return NextResponse.json({ book: full }, { status: 201 })
+    return NextResponse.json({ book }, { status: 201 })
   } catch (err) {
-    logger.error("create physical book failed", { err: String(err) })
+    logger.error("create book failed", { err: String(err) })
     if (isUniqueViolation(err)) {
-      return await isbnConflictResponse(isbn)
+      return await isbnConflictResponse(normalizeIsbn(data.isbn ?? null))
     }
     return NextResponse.json(
       { error: "Impossible d'enregistrer le livre." },

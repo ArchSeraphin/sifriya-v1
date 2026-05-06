@@ -1,6 +1,8 @@
 import type { NextAuthOptions } from "next-auth"
 import EmailProvider from "next-auth/providers/email"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
+import { NextResponse } from "next/server"
+import { getServerSession } from "next-auth/next"
 import { db } from "@/lib/db"
 import { pickAvatarColor } from "@/lib/avatar"
 import { renderMagicLinkEmail } from "@/lib/email"
@@ -93,4 +95,20 @@ export const authOptions: NextAuthOptions = {
       }
     }
   }
+}
+
+// Helper pour les routes admin. Renvoie une Response 401/403 si non autorise,
+// sinon la session avec userId garanti.
+export async function requireAdmin(): Promise<
+  | { ok: true; userId: string; email: string }
+  | { ok: false; response: NextResponse }
+> {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) {
+    return { ok: false, response: NextResponse.json({ error: "Non authentifie." }, { status: 401 }) }
+  }
+  if (session.user.role !== "ADMIN") {
+    return { ok: false, response: NextResponse.json({ error: "Acces refuse." }, { status: 403 }) }
+  }
+  return { ok: true, userId: session.user.id, email: session.user.email ?? "" }
 }
