@@ -8,6 +8,7 @@
 import levenshtein from "fast-levenshtein"
 import type { BookMetadata, ExtractedMetadata } from "@/lib/metadata"
 import type { BookMatch } from "@/lib/match"
+import { normalizeIsbn } from "@/lib/match"
 
 export type ScoringStatus = "AUTO_OK" | "TO_REVIEW" | "MANUAL" | "DUPLICATE"
 
@@ -47,10 +48,13 @@ export function scoreCandidates(input: {
 }): ScoringResult {
   const { extracted, candidates, existingMatch } = input
 
+  // ISBN normalise une seule fois (hyphens / espaces / X final)
+  const extIsbn = normalizeIsbn(extracted.isbn)
+
   // 1) Doublon avec biblio existante (priorite absolue)
   if (existingMatch) {
     const matchedCandidate =
-      candidates.find((c) => c.isbn && extracted.isbn && c.isbn === extracted.isbn) ??
+      (extIsbn ? candidates.find((c) => normalizeIsbn(c.isbn) === extIsbn) : undefined) ??
       candidates[0] ??
       null
     return {
@@ -61,8 +65,8 @@ export function scoreCandidates(input: {
   }
 
   // 2) Match ISBN strict avec un candidat API
-  if (extracted.isbn) {
-    const isbnHit = candidates.find((c) => c.isbn === extracted.isbn)
+  if (extIsbn) {
+    const isbnHit = candidates.find((c) => normalizeIsbn(c.isbn) === extIsbn)
     if (isbnHit) {
       return { status: "AUTO_OK", chosenCandidate: isbnHit, mergeIntoBookId: null }
     }

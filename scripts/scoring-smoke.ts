@@ -99,5 +99,16 @@ run(
   }).status
 )
 
+// 7. ISBN format mismatch (hyphens vs no hyphens)
+run(
+  "ISBN avec hyphens normalise",
+  "AUTO_OK",
+  scoreCandidates({
+    extracted: { title: "Candide", author: "Voltaire", isbn: "978-2-07-040846-9", language: "fr" },
+    candidates: [cand({ isbn: "9782070408469", title: "Candide", author: "Voltaire" })],
+    existingMatch: null
+  }).status
+)
+
 const failed = cases.filter((c) => c.expect !== c.got).length
 process.exit(failed === 0 ? 0 : 1)
