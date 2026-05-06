@@ -1,5 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/cn"
+import { upscaleCoverUrl } from "@/lib/cover-url"
 
 type CoverProps = {
   title: string
@@ -28,21 +29,22 @@ function hashToColor(s: string): string {
 
 export function Cover({ title, author, format, src, className }: CoverProps) {
   const bg = hashToColor(title)
+  const upscaled = upscaleCoverUrl(src)
   return (
     <div
       className={cn("cover relative aspect-[2/3] w-full text-[color:var(--accent-ink)]", className)}
-      style={src ? undefined : { background: bg }}
+      style={upscaled ? undefined : { background: bg }}
     >
-      {src ? (
+      {upscaled ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={src}
+          src={upscaled}
           alt=""
           className="absolute inset-0 h-full w-full object-cover"
           loading="lazy"
         />
       ) : null}
-      {!src ? (
+      {!upscaled ? (
         <div className="absolute inset-x-0 bottom-0 z-[2] p-3">
           <p
             className="line-clamp-3 font-serif text-[13px] leading-snug"
