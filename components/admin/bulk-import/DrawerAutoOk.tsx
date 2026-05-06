@@ -13,11 +13,13 @@ export function DrawerAutoOk({ item }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex gap-3">
-        <Cover title={c.title ?? ""} src={c.coverUrl ?? null} className="h-28 w-20" />
-        <div>
-          <p className="font-serif text-base text-ink">{c.title}</p>
-          <p className="text-[12px] text-ink-3">{c.author ?? "Auteur inconnu"}</p>
-          <p className="mt-1 text-[11px] text-ink-3">
+        <div className="w-20 shrink-0">
+          <Cover title={c.title ?? ""} src={c.coverUrl ?? null} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-serif text-base text-ink">{c.title}</p>
+          <p className="truncate text-[12px] text-ink-3">{c.author ?? "Auteur inconnu"}</p>
+          <p className="mt-1 truncate text-[11px] text-ink-3">
             {c.year ?? ""} {c.year && c.publisher ? "·" : ""} {c.publisher ?? ""}
           </p>
         </div>

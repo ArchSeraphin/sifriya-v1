@@ -66,11 +66,13 @@ export function DrawerReview({ item, sessionId, onUpdated }: Props) {
               picked === c.externalId ? "border-[color:var(--accent)] bg-accent-soft/40" : "border-[var(--rule)] bg-paper"
             }`}
           >
-            <Cover title={c.title} src={c.coverUrl} className="h-14 w-10 shrink-0" />
-            <div>
-              <p className="font-serif text-ink">{c.title}</p>
-              <p className="text-ink-3">{c.author ?? "—"} · {c.year ?? "—"}</p>
-              <p className="text-[10px] text-ink-3">{c.source} {c.isbn ? "· ISBN " + c.isbn : ""}</p>
+            <div className="w-10 shrink-0">
+              <Cover title={c.title} src={c.coverUrl} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-serif text-ink">{c.title}</p>
+              <p className="truncate text-ink-3">{c.author ?? "—"} · {c.year ?? "—"}</p>
+              <p className="truncate text-[10px] text-ink-3">{c.source} {c.isbn ? "· ISBN " + c.isbn : ""}</p>
             </div>
           </button>
         ))}
