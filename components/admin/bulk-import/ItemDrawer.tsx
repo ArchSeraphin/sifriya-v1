@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { X } from "lucide-react"
 import { DrawerAutoOk } from "./DrawerAutoOk"
 import { DrawerReview } from "./DrawerReview"
@@ -17,6 +18,14 @@ type Props = {
 }
 
 export function ItemDrawer({ item, sessionId, onClose, onPrev, onNext, onUpdated }: Props) {
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    window.addEventListener("keydown", handleEscape)
+    return () => window.removeEventListener("keydown", handleEscape)
+  }, [onClose])
+
   return (
     <div
       role="dialog"

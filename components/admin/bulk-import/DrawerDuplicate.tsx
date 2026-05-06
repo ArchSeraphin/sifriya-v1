@@ -41,7 +41,7 @@ export function DrawerDuplicate({ item, sessionId, onUpdated }: Props) {
       ) : null}
 
       <div className="space-y-2 pt-2">
-        <Button variant="primary" onClick={() => choose("MERGE")} disabled={pending}>
+        <Button variant="primary" onClick={() => choose("MERGE")} disabled={pending || !item.mergeIntoBookId}>
           Ajouter ma copie a la fiche existante
         </Button>
         <Button variant="secondary" onClick={() => choose("CREATE")} disabled={pending}>
