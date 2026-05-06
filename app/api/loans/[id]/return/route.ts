@@ -2,7 +2,6 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { LOAN_INCLUDE } from "@/lib/loans"
 
 export const dynamic = "force-dynamic"
 
@@ -27,7 +26,24 @@ export async function PATCH(_req: Request, ctx: { params: Promise<{ id: string }
   const updated = await db.loan.update({
     where: { id },
     data: { status: "RETURNED", returnedAt: new Date() },
-    include: LOAN_INCLUDE
+    select: {
+      id: true,
+      status: true,
+      createdAt: true,
+      returnedAt: true,
+      copy: {
+        select: {
+          id: true,
+          type: true,
+          book: {
+            select: { id: true, title: true, author: true, coverUrl: true }
+          },
+          owner: { select: { id: true, name: true, email: true, avatarColor: true } }
+        }
+      },
+      requester: { select: { id: true, name: true, email: true, avatarColor: true } },
+      owner: { select: { id: true, name: true, email: true, avatarColor: true } }
+    }
   })
   return NextResponse.json({ loan: updated })
 }
