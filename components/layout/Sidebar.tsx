@@ -10,6 +10,7 @@ import {
   BookMarked,
   BookOpen,
   Settings,
+  Upload,
   LogOut
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
@@ -107,6 +108,13 @@ function SidebarBody({ user, onNavigate }: { user: SidebarUser; onNavigate?: () 
               <li>
                 <NavItem
                   link={{ href: "/admin/membres", label: "Membres", Icon: Settings }}
+                  pathname={pathname}
+                  onNavigate={onNavigate}
+                />
+              </li>
+              <li>
+                <NavItem
+                  link={{ href: "/admin/bulk-import", label: "Import en masse", Icon: Upload }}
                   pathname={pathname}
                   onNavigate={onNavigate}
                 />

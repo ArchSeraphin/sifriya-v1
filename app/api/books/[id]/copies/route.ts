@@ -4,8 +4,8 @@ import { z } from "zod"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { commitPending } from "@/lib/storage"
 import { PUBLIC_BOOK_SELECT } from "@/lib/books"
+import { addCopyToBook } from "@/lib/books-mutations"
 import { logger } from "@/lib/logger"
 
 export const dynamic = "force-dynamic"
@@ -70,30 +70,17 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       )
     }
 
-    const ext = data.format.toLowerCase() as "epub" | "pdf"
-    let copyId: string | null = null
     try {
-      const copy = await db.bookCopy.create({
-        data: {
-          bookId,
+      await addCopyToBook(
+        bookId,
+        {
           type: "DIGITAL",
+          uploadId: data.uploadId,
           format: data.format,
-          fileSize: data.fileSize,
-          filePath: "pending",
-          addedById: session.user.id
+          fileSize: data.fileSize
         },
-        select: { id: true }
-      })
-      copyId = copy.id
-      const finalKey = await commitPending({
-        pendingId: data.uploadId,
-        ext,
-        finalKey: `copies/${copyId}.${ext}`
-      })
-      await db.bookCopy.update({
-        where: { id: copyId },
-        data: { filePath: finalKey }
-      })
+        session.user.id
+      )
       const full = await db.book.findUnique({
         where: { id: bookId },
         select: PUBLIC_BOOK_SELECT
@@ -101,9 +88,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       return NextResponse.json({ book: full }, { status: 201 })
     } catch (err) {
       logger.error("add digital copy failed", { err: String(err) })
-      if (copyId) {
-        await db.bookCopy.delete({ where: { id: copyId } }).catch(() => {})
-      }
       return NextResponse.json(
         { error: "Impossible d'ajouter cette copie." },
         { status: 500 }
@@ -125,14 +109,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     )
   }
 
-  await db.bookCopy.create({
-    data: {
-      bookId,
-      type: "PHYSICAL",
-      ownerId: session.user.id,
-      addedById: session.user.id
-    }
-  })
+  await addCopyToBook(bookId, { type: "PHYSICAL" }, session.user.id)
   const full = await db.book.findUnique({
     where: { id: bookId },
     select: PUBLIC_BOOK_SELECT

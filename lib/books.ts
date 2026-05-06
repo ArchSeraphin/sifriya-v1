@@ -77,7 +77,7 @@ export const PUBLIC_BOOK_SELECT = {
 } as const
 
 // =====================================================================
-// Helpers d'affichage
+// Helpers d'affichage (purs — utilisables cote client)
 // =====================================================================
 
 export function formatBytes(bytes: number | null | undefined): string {

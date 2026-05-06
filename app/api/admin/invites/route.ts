@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
+import { requireAdmin } from "@/lib/auth"
 import { inviteUser } from "@/lib/invite"
 import { logger } from "@/lib/logger"
 
@@ -12,10 +11,8 @@ const Body = z.object({
 })
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Acces refuse." }, { status: 403 })
-  }
+  const auth = await requireAdmin()
+  if (!auth.ok) return auth.response
 
   let body: unknown
   try {

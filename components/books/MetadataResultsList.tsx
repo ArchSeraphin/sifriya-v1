@@ -8,14 +8,16 @@ import { Button } from "@/components/ui/Button"
 const SOURCE_LABEL: Record<MetadataSource, string> = {
   google_books: "Google",
   bnf: "BnF",
-  open_library: "OpenLibrary"
+  open_library: "OpenLibrary",
+  manual: "Manuel"
 }
 
 const SOURCE_PILL: Record<MetadataSource, string> = {
   // Code couleur discret aligne sur la palette du design system.
   google_books: "bg-paper-3 text-ink-2",
   bnf: "bg-accent-soft text-[#5a4711]",
-  open_library: "bg-paper-2 text-ink-3"
+  open_library: "bg-paper-2 text-ink-3",
+  manual: "bg-paper-2 text-ink-3"
 }
 
 type Props = {

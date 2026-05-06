@@ -45,5 +45,12 @@ next-env.d.ts
 # uploads (dev local)
 /uploads
 
+# fixtures de test bulk-import (deposer en local, ne pas committer)
+/scripts/fixtures/bulk-import/*
+!/scripts/fixtures/bulk-import/.gitkeep
+
 # docker
 .docker-data
+
+# superpowers brainstorming sessions
+.superpowers/

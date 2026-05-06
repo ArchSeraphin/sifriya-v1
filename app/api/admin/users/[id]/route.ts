@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/lib/auth"
+import { requireAdmin } from "@/lib/auth"
 import { db } from "@/lib/db"
 
 export const dynamic = "force-dynamic"
@@ -12,10 +11,8 @@ const PatchBody = z.object({
 })
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Acces refuse." }, { status: 403 })
-  }
+  const auth = await requireAdmin()
+  if (!auth.ok) return auth.response
 
   const { id } = await ctx.params
 
@@ -31,7 +28,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   }
 
   // Empeche un admin de retrograder son propre compte (eviter de se locker out).
-  if (parsed.data.role && id === session.user.id && parsed.data.role !== "ADMIN") {
+  if (parsed.data.role && id === auth.userId && parsed.data.role !== "ADMIN") {
     return NextResponse.json(
       { error: "Vous ne pouvez pas changer votre propre role." },
       { status: 400 }
