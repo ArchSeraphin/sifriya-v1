@@ -5,6 +5,14 @@ import { db } from "@/lib/db"
 import { PUBLIC_BOOK_SELECT } from "@/lib/books"
 import { BookDetail } from "@/components/books/BookDetail"
 
+export const dynamic = "force-dynamic"
+
+export async function generateMetadata(props: { params: Promise<{ id: string }> }) {
+  const { id } = await props.params
+  const book = await db.book.findUnique({ where: { id }, select: { title: true } })
+  return { title: book ? `${book.title} — Sifriya` : "Livre — Sifriya" }
+}
+
 export default async function Page(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params
   const session = await getServerSession(authOptions)
