@@ -14,7 +14,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const { id: sessionId } = await ctx.params
   const session = await db.bulkImportSession.findUnique({
     where: { id: sessionId },
-    select: { id: true, ownerId: true, status: true }
+    select: { id: true, ownerId: true, status: true, totalFiles: true }
   })
   if (!session) return NextResponse.json({ error: "Session introuvable." }, { status: 404 })
   if (session.ownerId !== auth.userId) return NextResponse.json({ error: "Acces refuse." }, { status: 403 })
@@ -32,6 +32,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const file = form.get("file")
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Aucun fichier envoye." }, { status: 400 })
+  }
+
+  // Garde-fou : refuser si on depasse totalFiles declare a la creation de session.
+  const itemCount = await db.bulkImportItem.count({ where: { sessionId } })
+  if (itemCount >= session.totalFiles) {
+    return NextResponse.json({ error: "Limite de fichiers de la session atteinte." }, { status: 409 })
   }
 
   const validation = await validateUpload(file)

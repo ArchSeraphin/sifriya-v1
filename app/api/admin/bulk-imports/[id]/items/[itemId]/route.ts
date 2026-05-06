@@ -116,8 +116,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string; i
     where: { id: itemId },
     data: {
       decision: parsed.data.decision,
-      chosenCandidate: chosen as unknown as object,
-      // Distinguer null (effacer la valeur) de undefined (laisser inchangee).
+      // Distinguer absent (laisser inchange) de null/value (overwrite).
+      // Le second spread couvre la saisie manuelle : formOverrides sans
+      // chosenCandidate construit un candidat « manual » qui DOIT etre persiste.
+      ...(parsed.data.chosenCandidate !== undefined ? { chosenCandidate: chosen as unknown as object } : {}),
+      ...(parsed.data.formOverrides && !parsed.data.chosenCandidate ? { chosenCandidate: chosen as unknown as object } : {}),
       mergeIntoBookId:
         parsed.data.mergeIntoBookId === undefined
           ? undefined

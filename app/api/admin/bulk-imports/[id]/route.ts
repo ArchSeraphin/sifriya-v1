@@ -79,8 +79,9 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
     data: { status: "ABANDONED" }
   })
   if (flipped.count === 0) {
-    // Etat a change entre la lecture et l'update — un commit a probablement gagne.
-    return NextResponse.json({ error: "Session deja cloturee par un commit concurrent." }, { status: 409 })
+    // Etat a change entre la lecture et l'update — un commit a probablement gagne
+    // (status COMMITTING) ou la session est deja cloturee.
+    return NextResponse.json({ error: "Session en cours de commit ou deja cloturee." }, { status: 409 })
   }
 
   // 3) Purger les pending files non commits (apres le flip, donc safe).

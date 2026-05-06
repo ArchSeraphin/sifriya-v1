@@ -56,14 +56,16 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string; i
     return NextResponse.json({ error: "Pending file manquant." }, { status: 422 })
   }
 
-  // Marquer PROCESSING tot pour que le polling client le voit.
-  // V1 : pas de garde contre process concurrent du meme item (admin-only, faible
-  // concurrence). En cas de besoin, ajouter `where: { id, status: { in: ["PENDING", "ERROR"] } }`
-  // + verifier le count.
-  await db.bulkImportItem.update({
-    where: { id: itemId },
+  // Garde atomique : flip PENDING/ERROR -> PROCESSING. Si un autre process a deja
+  // commence, count === 0 et on retourne 409. Le polling client verra PROCESSING
+  // des le retour de cette requete.
+  const flipped = await db.bulkImportItem.updateMany({
+    where: { id: itemId, status: { in: ["PENDING", "ERROR"] } },
     data: { status: "PROCESSING" }
   })
+  if (flipped.count === 0) {
+    return NextResponse.json({ error: "Item deja en cours de traitement." }, { status: 409 })
+  }
 
   try {
     const ext = item.format.toLowerCase()
