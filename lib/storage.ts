@@ -69,12 +69,17 @@ export async function savePending(buffer: Buffer, ext: string): Promise<{ id: st
 }
 
 // Renomme un fichier pending vers son emplacement definitif.
+// Defense-in-depth : finalKey doit commencer par "copies/" pour qu'un appelant
+// (ou un bug) ne puisse pas ecraser une couverture ou un fichier hors-zone.
 export async function commitPending(opts: {
   pendingId: string
   ext: string
   finalKey: string
 }): Promise<string> {
   if (!isAllowedExt(opts.ext)) throw new Error(`Extension non supportee : ${opts.ext}`)
+  if (!opts.finalKey.startsWith("copies/")) {
+    throw new Error(`finalKey doit etre dans copies/ : ${opts.finalKey}`)
+  }
   const safeFinal = ensureSafeKey(opts.finalKey)
   const safePending = ensureSafeKey(`_pending/${opts.pendingId}.${opts.ext.toLowerCase()}`)
   const src = path.join(root(), safePending)
