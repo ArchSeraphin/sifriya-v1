@@ -10,7 +10,7 @@ const ChosenCandidate = z
   .object({
     source: z.enum(["google_books", "open_library", "bnf", "manual"]),
     externalId: z.string(),
-    title: z.string(),
+    title: z.string().min(1).max(500),
     author: z.string().nullable(),
     isbn: z.string().nullable(),
     year: z.number().nullable(),
@@ -87,10 +87,29 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string; i
   }
 
   // formOverrides est merge dans chosenCandidate si fourni.
-  // Permet a l'admin de corriger une erreur API avant le commit.
+  // Permet a l'admin de corriger une erreur API avant le commit,
+  // ou de saisir un livre entierement a la main (flux MANUAL).
   let chosen = parsed.data.chosenCandidate ?? null
-  if (parsed.data.formOverrides && chosen) {
-    chosen = { ...chosen, ...parsed.data.formOverrides }
+  const overrides = parsed.data.formOverrides
+
+  if (chosen && overrides) {
+    // Merge overrides sur le candidat existant
+    chosen = { ...chosen, ...overrides }
+  } else if (!chosen && overrides && overrides.title && overrides.title.trim().length > 0) {
+    // Saisie manuelle : construire un candidat depuis les overrides seulement
+    chosen = {
+      source: "manual",
+      externalId: "",
+      title: overrides.title,
+      author: overrides.author ?? null,
+      isbn: overrides.isbn ?? null,
+      year: overrides.year ?? null,
+      publisher: overrides.publisher ?? null,
+      language: overrides.language ?? "fr",
+      coverUrl: overrides.coverUrl ?? null,
+      description: overrides.description ?? null,
+      genre: overrides.genre ?? null
+    }
   }
 
   await db.bulkImportItem.update({
@@ -98,7 +117,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string; i
     data: {
       decision: parsed.data.decision,
       chosenCandidate: chosen as unknown as object,
-      mergeIntoBookId: parsed.data.mergeIntoBookId ?? undefined
+      // Distinguer null (effacer la valeur) de undefined (laisser inchangee).
+      mergeIntoBookId:
+        parsed.data.mergeIntoBookId === undefined
+          ? undefined
+          : parsed.data.mergeIntoBookId
     }
   })
 
