@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { deleteByKey } from "@/lib/storage"
 import { PUBLIC_BOOK_SELECT } from "@/lib/books"
+import { computeMatchKey, normalizeIsbn } from "@/lib/match"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
@@ -49,13 +50,13 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   const book = await db.book.findUnique({
     where: { id },
-    select: { id: true, addedById: true }
+    select: { id: true, copies: { select: { addedById: true } } }
   })
   if (!book) return NextResponse.json({ error: "Livre introuvable." }, { status: 404 })
 
   const isAdmin = session.user.role === "ADMIN"
-  const isAuthor = book.addedById === session.user.id
-  if (!isAdmin && !isAuthor) {
+  const isCopyOwner = book.copies.some((c) => c.addedById === session.user.id)
+  if (!isAdmin && !isCopyOwner) {
     return NextResponse.json({ error: "Acces refuse." }, { status: 403 })
   }
 
@@ -76,7 +77,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     return NextResponse.json({ error: "Aucun champ a modifier." }, { status: 400 })
   }
 
-  // "" -> null pour les champs textuels nullable.
   const data = parsed.data
   const normalized: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(data)) {
@@ -87,32 +87,70 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     normalized[k] = v === "" ? null : v
   }
 
-  const updated = await db.book.update({
-    where: { id },
-    data: normalized,
-    select: PUBLIC_BOOK_SELECT
-  })
-  return NextResponse.json({ book: updated })
+  // Si titre/auteur/isbn change, recalculer matchKey + normaliser ISBN
+  if ("title" in normalized || "author" in normalized || "isbn" in normalized) {
+    const current = await db.book.findUnique({
+      where: { id },
+      select: { title: true, author: true, isbn: true }
+    })
+    const finalTitle = (normalized.title as string | undefined) ?? current!.title
+    const finalAuthor =
+      "author" in normalized ? (normalized.author as string | null) : current!.author
+    const finalIsbn = "isbn" in normalized ? (normalized.isbn as string | null) : current!.isbn
+    normalized.matchKey = computeMatchKey(finalTitle, finalAuthor)
+    normalized.isbn = normalizeIsbn(finalIsbn)
+  }
+
+  try {
+    const updated = await db.book.update({
+      where: { id },
+      data: normalized,
+      select: PUBLIC_BOOK_SELECT
+    })
+    return NextResponse.json({ book: updated })
+  } catch (err) {
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code?: string }).code === "P2002"
+    ) {
+      return NextResponse.json(
+        { error: "Un autre livre porte deja cet ISBN." },
+        { status: 409 }
+      )
+    }
+    throw err
+  }
 }
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: "Non authentifie." }, { status: 401 })
+
+  // Reserve admin (route nucleaire). Suppression normale = via DELETE copie.
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Acces refuse." }, { status: 403 })
+  }
+
   const { id } = await ctx.params
 
   const book = await db.book.findUnique({
     where: { id },
-    select: { id: true, addedById: true, filePath: true }
+    select: {
+      id: true,
+      copies: { select: { id: true, type: true, filePath: true } }
+    }
   })
   if (!book) return NextResponse.json({ error: "Livre introuvable." }, { status: 404 })
 
-  const isAdmin = session.user.role === "ADMIN"
-  const isOwner = book.addedById === session.user.id
-  if (!isAdmin && !isOwner) {
-    return NextResponse.json({ error: "Acces refuse." }, { status: 403 })
+  await db.book.delete({ where: { id } })
+
+  for (const c of book.copies) {
+    if (c.type === "DIGITAL") {
+      await deleteByKey(c.filePath ?? null)
+    }
   }
 
-  await db.book.delete({ where: { id } })
-  await deleteByKey(book.filePath ?? null)
   return NextResponse.json({ ok: true })
 }
