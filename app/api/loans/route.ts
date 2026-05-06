@@ -3,7 +3,7 @@ import { z } from "zod"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { LOAN_INCLUDE, signLoanToken, buildRespondUrl } from "@/lib/loans"
+import { signLoanToken, buildRespondUrl } from "@/lib/loans"
 import { sendLoanRequest } from "@/lib/email"
 import { logger } from "@/lib/logger"
 
@@ -23,12 +23,12 @@ export async function GET() {
     db.loan.findMany({
       where: { requesterId: userId },
       orderBy: { createdAt: "desc" },
-      include: LOAN_INCLUDE
+      select: loanSelect
     }),
     db.loan.findMany({
       where: { ownerId: userId },
       orderBy: { createdAt: "desc" },
-      include: LOAN_INCLUDE
+      select: loanSelect
     })
   ])
 
@@ -36,10 +36,12 @@ export async function GET() {
 }
 
 // =====================================================================
-// POST /api/loans — cree une demande de pret pour un livre physique
+// POST /api/loans — cree une demande de pret pour une copie physique
 // =====================================================================
 
-const Body = z.object({ bookId: z.string().min(1) })
+const CreateBody = z.object({
+  copyId: z.string().min(1)
+})
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
@@ -51,37 +53,48 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "JSON invalide." }, { status: 400 })
   }
-  const parsed = Body.safeParse(raw)
-  if (!parsed.success) return NextResponse.json({ error: "Donnees invalides." }, { status: 400 })
+  const parsed = CreateBody.safeParse(raw)
+  if (!parsed.success) {
+    return NextResponse.json({ error: "copyId requis." }, { status: 400 })
+  }
 
-  const book = await db.book.findUnique({
-    where: { id: parsed.data.bookId },
-    include: {
+  const copy = await db.bookCopy.findUnique({
+    where: { id: parsed.data.copyId },
+    select: {
+      id: true,
+      type: true,
+      ownerId: true,
+      bookId: true,
+      book: { select: { title: true } },
       owner: { select: { id: true, name: true, email: true } }
     }
   })
-  if (!book) return NextResponse.json({ error: "Livre introuvable." }, { status: 404 })
-  if (book.type !== "PHYSICAL") {
-    return NextResponse.json({ error: "Seuls les livres physiques peuvent etre pretes." }, { status: 400 })
+  if (!copy) return NextResponse.json({ error: "Copie introuvable." }, { status: 404 })
+  if (copy.type !== "PHYSICAL" || !copy.ownerId || !copy.owner) {
+    return NextResponse.json(
+      { error: "Cette copie ne peut pas etre pretee." },
+      { status: 400 }
+    )
   }
-  if (!book.owner) {
-    return NextResponse.json({ error: "Ce livre n'a pas de proprietaire." }, { status: 400 })
-  }
-  if (book.owner.id === session.user.id) {
-    return NextResponse.json({ error: "Vous etes deja le proprietaire de ce livre." }, { status: 400 })
+  if (copy.ownerId === session.user.id) {
+    return NextResponse.json(
+      { error: "Vous etes deja proprietaire de cette copie." },
+      { status: 400 }
+    )
   }
 
-  // Une seule demande active (PENDING ou ACCEPTED) par requester+book.
+  // Une seule demande active (PENDING ou ACCEPTED) par requester+copie.
   const existing = await db.loan.findFirst({
     where: {
-      bookId: book.id,
+      copyId: copy.id,
       requesterId: session.user.id,
       status: { in: ["PENDING", "ACCEPTED"] }
-    }
+    },
+    select: { id: true }
   })
   if (existing) {
     return NextResponse.json(
-      { error: "Vous avez deja une demande active pour ce livre." },
+      { error: "Vous avez deja une demande active sur cette copie." },
       { status: 409 }
     )
   }
@@ -94,12 +107,14 @@ export async function POST(req: Request) {
   // Cree le pret puis genere le token, hash, met a jour.
   const loan = await db.loan.create({
     data: {
-      bookId: book.id,
+      copyId: copy.id,
       requesterId: session.user.id,
-      ownerId: book.owner.id,
+      ownerId: copy.ownerId,
       status: "PENDING"
-    }
+    },
+    select: { id: true }
   })
+
   const { jwt, hash } = await signLoanToken(loan.id)
   const expiry = new Date(Date.now() + 72 * 60 * 60 * 1000)
   await db.loan.update({
@@ -107,12 +122,14 @@ export async function POST(req: Request) {
     data: { token: hash, tokenExpiry: expiry }
   })
 
+  const requesterName =
+    session.user.name ?? session.user.email!.split("@")[0]!
   try {
     await sendLoanRequest({
-      ownerEmail: book.owner.email,
-      ownerName: book.owner.name ?? book.owner.email.split("@")[0]!,
-      requesterName: session.user.name ?? session.user.email!.split("@")[0]!,
-      bookTitle: book.title,
+      ownerEmail: copy.owner.email,
+      ownerName: copy.owner.name ?? copy.owner.email.split("@")[0]!,
+      requesterName,
+      bookTitle: copy.book.title,
       acceptUrl: buildRespondUrl({ baseUrl, loanId: loan.id, jwt, action: "accept" }),
       refuseUrl: buildRespondUrl({ baseUrl, loanId: loan.id, jwt, action: "refuse" })
     })
@@ -124,3 +141,26 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ ok: true, loanId: loan.id }, { status: 201 })
 }
+
+// =====================================================================
+// Select partagé pour les requetes GET
+// =====================================================================
+
+const loanSelect = {
+  id: true,
+  status: true,
+  createdAt: true,
+  returnedAt: true,
+  copy: {
+    select: {
+      id: true,
+      type: true,
+      book: {
+        select: { id: true, title: true, author: true, coverUrl: true }
+      },
+      owner: { select: { id: true, name: true, email: true, avatarColor: true } }
+    }
+  },
+  requester: { select: { id: true, name: true, email: true, avatarColor: true } },
+  owner: { select: { id: true, name: true, email: true, avatarColor: true } }
+} as const
