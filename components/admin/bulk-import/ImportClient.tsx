@@ -50,6 +50,9 @@ export function ImportClient({ sessionId, totalFiles, initialStatus }: Props) {
 
   // Polling tant qu'il reste des items en PENDING/PROCESSING.
   React.useEffect(() => {
+    // Stop si la session est deja terminale
+    if (status === "COMMITTED" || status === "ABANDONED") return
+
     let stopped = false
     const tick = async () => {
       if (stopped) return
@@ -61,7 +64,7 @@ export function ImportClient({ sessionId, totalFiles, initialStatus }: Props) {
       stopped = true
       window.clearInterval(interval)
     }
-  }, [refetch])
+  }, [refetch, status])
 
   const counts = React.useMemo(() => {
     const buckets: Record<string, number> = {}

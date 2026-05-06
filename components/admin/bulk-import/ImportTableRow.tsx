@@ -37,8 +37,8 @@ export function ImportTableRow({
         : `${candCount} candidats`
 
   return (
-    <div
-      className="grid cursor-pointer grid-cols-[1fr_180px_100px_24px] items-center gap-2 border-t border-[var(--rule-2)] px-4 py-2 text-[12px] hover:bg-paper-2/50"
+    <button
+      type="button"
       onClick={() => {
         window.dispatchEvent(
           new CustomEvent("bulk-import-open-drawer", {
@@ -46,6 +46,7 @@ export function ImportTableRow({
           })
         )
       }}
+      className="grid w-full cursor-pointer grid-cols-[1fr_180px_100px_24px] items-center gap-2 border-t border-[var(--rule-2)] px-4 py-2 text-left text-[12px] hover:bg-paper-2/50"
     >
       <div className="truncate font-mono text-ink-2">{item.filename}</div>
       <div className="truncate text-ink-2">{matchSummary}</div>
@@ -55,6 +56,6 @@ export function ImportTableRow({
         </span>
       </div>
       <ChevronRight size={14} className="text-ink-3" />
-    </div>
+    </button>
   )
 }
