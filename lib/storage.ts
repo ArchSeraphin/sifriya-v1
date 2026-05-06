@@ -89,6 +89,12 @@ export async function commitPending(opts: {
   return safeFinal
 }
 
+// Supprime un fichier pending par son id (utilise par bulk import abandonne).
+export async function deletePending(id: string, ext: string): Promise<void> {
+  if (!isAllowedExt(ext)) throw new Error(`Extension non supportee : ${ext}`)
+  await deleteByKey(`_pending/${id}.${ext.toLowerCase()}`)
+}
+
 export async function deleteByKey(key: string | null | undefined): Promise<void> {
   if (!key) return
   const safe = ensureSafeKey(key)
