@@ -19,7 +19,7 @@ export default async function MesLivresPage() {
   if (!session?.user) redirect("/login")
 
   const books = await db.book.findMany({
-    where: { addedById: session.user.id },
+    where: { copies: { some: { addedById: session.user.id } } },
     orderBy: { addedAt: "desc" },
     select: PUBLIC_BOOK_SELECT
   })
