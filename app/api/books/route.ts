@@ -7,9 +7,9 @@ import { db } from "@/lib/db"
 import {
   ListQuery,
   orderByForSort,
-  PUBLIC_BOOK_SELECT,
-  createBookWithCopy
+  PUBLIC_BOOK_SELECT
 } from "@/lib/books"
+import { createBookWithCopy } from "@/lib/books-mutations"
 import { normalizeIsbn } from "@/lib/match"
 import { logger } from "@/lib/logger"
 
