@@ -2,7 +2,7 @@
 CREATE TYPE "Role" AS ENUM ('ADMIN', 'USER');
 
 -- CreateEnum
-CREATE TYPE "BookType" AS ENUM ('DIGITAL', 'PHYSICAL');
+CREATE TYPE "CopyType" AS ENUM ('DIGITAL', 'PHYSICAL');
 
 -- CreateEnum
 CREATE TYPE "FileFormat" AS ENUM ('EPUB', 'PDF');
@@ -70,30 +70,41 @@ CREATE TABLE "Book" (
     "title" TEXT NOT NULL,
     "author" TEXT,
     "isbn" TEXT,
-    "coverUrl" TEXT,
     "description" TEXT,
     "genre" TEXT,
     "year" INTEGER,
     "publisher" TEXT,
     "language" TEXT DEFAULT 'fr',
-    "type" "BookType" NOT NULL DEFAULT 'DIGITAL',
-    "format" "FileFormat",
-    "filePath" TEXT,
-    "fileSize" INTEGER,
+    "coverUrl" TEXT,
     "sourceApi" TEXT,
     "externalId" TEXT,
+    "matchKey" TEXT NOT NULL,
     "addedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "addedById" TEXT NOT NULL,
-    "ownerId" TEXT,
 
     CONSTRAINT "Book_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "Loan" (
+CREATE TABLE "BookCopy" (
     "id" TEXT NOT NULL,
     "bookId" TEXT NOT NULL,
+    "type" "CopyType" NOT NULL,
+    "format" "FileFormat",
+    "filePath" TEXT,
+    "fileSize" INTEGER,
+    "ownerId" TEXT,
+    "addedById" TEXT NOT NULL,
+    "addedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BookCopy_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Loan" (
+    "id" TEXT NOT NULL,
+    "copyId" TEXT NOT NULL,
     "requesterId" TEXT NOT NULL,
     "ownerId" TEXT NOT NULL,
     "status" "LoanStatus" NOT NULL DEFAULT 'PENDING',
@@ -134,16 +145,28 @@ CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationTok
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Book_isbn_key" ON "Book"("isbn");
+
+-- CreateIndex
+CREATE INDEX "Book_matchKey_idx" ON "Book"("matchKey");
+
+-- CreateIndex
 CREATE INDEX "Book_title_idx" ON "Book"("title");
 
 -- CreateIndex
 CREATE INDEX "Book_author_idx" ON "Book"("author");
 
 -- CreateIndex
-CREATE INDEX "Book_type_idx" ON "Book"("type");
+CREATE INDEX "Book_addedAt_idx" ON "Book"("addedAt");
 
 -- CreateIndex
-CREATE INDEX "Book_addedAt_idx" ON "Book"("addedAt");
+CREATE INDEX "BookCopy_bookId_idx" ON "BookCopy"("bookId");
+
+-- CreateIndex
+CREATE INDEX "BookCopy_ownerId_idx" ON "BookCopy"("ownerId");
+
+-- CreateIndex
+CREATE INDEX "BookCopy_addedById_idx" ON "BookCopy"("addedById");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Loan_token_key" ON "Loan"("token");
@@ -153,6 +176,9 @@ CREATE INDEX "Loan_requesterId_idx" ON "Loan"("requesterId");
 
 -- CreateIndex
 CREATE INDEX "Loan_ownerId_idx" ON "Loan"("ownerId");
+
+-- CreateIndex
+CREATE INDEX "Loan_copyId_idx" ON "Loan"("copyId");
 
 -- CreateIndex
 CREATE INDEX "Loan_status_idx" ON "Loan"("status");
@@ -173,13 +199,16 @@ ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId"
 ALTER TABLE "User" ADD CONSTRAINT "User_invitedById_fkey" FOREIGN KEY ("invitedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Book" ADD CONSTRAINT "Book_addedById_fkey" FOREIGN KEY ("addedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "BookCopy" ADD CONSTRAINT "BookCopy_bookId_fkey" FOREIGN KEY ("bookId") REFERENCES "Book"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Book" ADD CONSTRAINT "Book_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "BookCopy" ADD CONSTRAINT "BookCopy_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Loan" ADD CONSTRAINT "Loan_bookId_fkey" FOREIGN KEY ("bookId") REFERENCES "Book"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "BookCopy" ADD CONSTRAINT "BookCopy_addedById_fkey" FOREIGN KEY ("addedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Loan" ADD CONSTRAINT "Loan_copyId_fkey" FOREIGN KEY ("copyId") REFERENCES "BookCopy"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Loan" ADD CONSTRAINT "Loan_requesterId_fkey" FOREIGN KEY ("requesterId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -188,7 +217,7 @@ ALTER TABLE "Loan" ADD CONSTRAINT "Loan_requesterId_fkey" FOREIGN KEY ("requeste
 ALTER TABLE "Loan" ADD CONSTRAINT "Loan_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Reading" ADD CONSTRAINT "Reading_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Reading" ADD CONSTRAINT "Reading_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Reading" ADD CONSTRAINT "Reading_bookId_fkey" FOREIGN KEY ("bookId") REFERENCES "Book"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Reading" ADD CONSTRAINT "Reading_bookId_fkey" FOREIGN KEY ("bookId") REFERENCES "Book"("id") ON DELETE CASCADE ON UPDATE CASCADE;
