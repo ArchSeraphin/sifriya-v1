@@ -6,6 +6,7 @@ import { SESSION_POLL_INTERVAL_MS } from "@/lib/bulk-import-limits"
 import { ImportTable } from "./ImportTable"
 import { ImportFilters } from "./ImportFilters"
 import { ImportProgressBar } from "./ImportProgressBar"
+import { ItemDrawer } from "./ItemDrawer"
 import type { BulkImportItem, BulkImportSessionStatus } from "@prisma/client"
 
 type Props = {
@@ -37,6 +38,7 @@ export function ImportClient({ sessionId, totalFiles, initialStatus }: Props) {
   const [items, setItems] = React.useState<ItemForUI[]>([])
   const [status, setStatus] = React.useState<BulkImportSessionStatus>(initialStatus)
   const [filter, setFilter] = React.useState<string>("ALL")
+  const [openItemId, setOpenItemId] = React.useState<string | null>(null)
 
   const refetch = React.useCallback(async () => {
     const res = await fetch(`/api/admin/bulk-imports/${sessionId}`)
@@ -66,6 +68,15 @@ export function ImportClient({ sessionId, totalFiles, initialStatus }: Props) {
     }
   }, [refetch, status])
 
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ itemId: string }>).detail
+      setOpenItemId(detail.itemId)
+    }
+    window.addEventListener("bulk-import-open-drawer", handler)
+    return () => window.removeEventListener("bulk-import-open-drawer", handler)
+  }, [])
+
   const counts = React.useMemo(() => {
     const buckets: Record<string, number> = {}
     for (const i of items) buckets[i.status] = (buckets[i.status] ?? 0) + 1
@@ -76,6 +87,15 @@ export function ImportClient({ sessionId, totalFiles, initialStatus }: Props) {
   const processedCount = items.filter(
     (i) => i.status !== "PENDING" && i.status !== "PROCESSING"
   ).length
+
+  const openItem = items.find((i) => i.id === openItemId) ?? null
+  const sameStatusItems = openItem ? items.filter((i) => i.status === openItem.status) : []
+  const idx = openItem ? sameStatusItems.findIndex((i) => i.id === openItem.id) : -1
+  const onPrev = idx > 0 ? () => setOpenItemId(sameStatusItems[idx - 1]!.id) : null
+  const onNext =
+    idx >= 0 && idx < sameStatusItems.length - 1
+      ? () => setOpenItemId(sameStatusItems[idx + 1]!.id)
+      : null
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 p-6">
@@ -98,6 +118,17 @@ export function ImportClient({ sessionId, totalFiles, initialStatus }: Props) {
         onCommitted={refetch}
       />
       <ImportTable items={visibleItems} sessionId={sessionId} />
+
+      {openItem ? (
+        <ItemDrawer
+          item={openItem}
+          sessionId={sessionId}
+          onClose={() => setOpenItemId(null)}
+          onPrev={onPrev}
+          onNext={onNext}
+          onUpdated={refetch}
+        />
+      ) : null}
     </div>
   )
 }
