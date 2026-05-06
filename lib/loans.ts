@@ -1,6 +1,6 @@
 import crypto from "node:crypto"
 import { SignJWT, jwtVerify } from "jose"
-import type { Loan, User, Book } from "@prisma/client"
+import type { Loan, BookCopy, Book, User } from "@prisma/client"
 
 const ISSUER = "sifriya"
 const AUDIENCE = "sifriya:loan-respond"
@@ -57,14 +57,27 @@ export function buildRespondUrl(opts: {
 // DTO pour la page /pret
 // =====================================================================
 
+type PersonLite = Pick<User, "id" | "name" | "email" | "avatarColor">
+
 export type LoanWithRefs = Loan & {
-  book: Pick<Book, "id" | "title" | "author" | "coverUrl" | "type" | "format">
-  requester: Pick<User, "id" | "name" | "email" | "avatarColor">
-  owner: Pick<User, "id" | "name" | "email" | "avatarColor">
+  copy: Pick<BookCopy, "id" | "type" | "format"> & {
+    book: Pick<Book, "id" | "title" | "author" | "coverUrl">
+    owner: PersonLite | null
+  }
+  requester: PersonLite
+  owner: PersonLite
 }
 
 export const LOAN_INCLUDE = {
-  book: { select: { id: true, title: true, author: true, coverUrl: true, type: true, format: true } },
+  copy: {
+    select: {
+      id: true,
+      type: true,
+      format: true,
+      book: { select: { id: true, title: true, author: true, coverUrl: true } },
+      owner: { select: { id: true, name: true, email: true, avatarColor: true } }
+    }
+  },
   requester: { select: { id: true, name: true, email: true, avatarColor: true } },
   owner: { select: { id: true, name: true, email: true, avatarColor: true } }
 } as const
