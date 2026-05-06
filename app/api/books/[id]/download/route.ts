@@ -1,52 +1,60 @@
+import { NextResponse } from "next/server"
+import { z } from "zod"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { readWebStream, statByKey, safeFilename } from "@/lib/storage"
+import { readWebStream, statByKey } from "@/lib/storage"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
-const MIME: Record<string, string> = {
-  EPUB: "application/epub+zip",
-  PDF: "application/pdf"
-}
+const Query = z.object({
+  format: z.enum(["EPUB", "PDF"])
+})
 
-export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session?.user) {
-    return new Response(JSON.stringify({ error: "Non authentifie." }), {
-      status: 401,
-      headers: { "content-type": "application/json" }
-    })
+    return NextResponse.json({ error: "Non authentifie." }, { status: 401 })
   }
-  const { id } = await ctx.params
-  const book = await db.book.findUnique({
-    where: { id },
-    select: { id: true, title: true, format: true, filePath: true, type: true }
+  const { id: bookId } = await ctx.params
+
+  const url = new URL(req.url)
+  const parsed = Query.safeParse(Object.fromEntries(url.searchParams.entries()))
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Format requis (EPUB ou PDF)." }, { status: 400 })
+  }
+  const { format } = parsed.data
+
+  const copy = await db.bookCopy.findFirst({
+    where: { bookId, type: "DIGITAL", format },
+    select: { id: true, filePath: true, format: true }
   })
-  if (!book || book.type !== "DIGITAL" || !book.filePath || !book.format) {
-    return new Response(JSON.stringify({ error: "Fichier indisponible." }), {
-      status: 404,
-      headers: { "content-type": "application/json" }
-    })
+  if (!copy?.filePath) {
+    return NextResponse.json(
+      { error: `Aucune copie ${format} disponible pour ce livre.` },
+      { status: 404 }
+    )
   }
-  const stat = await statByKey(book.filePath)
-  if (!stat) {
-    return new Response(JSON.stringify({ error: "Fichier introuvable." }), {
-      status: 404,
-      headers: { "content-type": "application/json" }
-    })
+
+  const meta = await statByKey(copy.filePath)
+  if (!meta) {
+    return NextResponse.json({ error: "Fichier introuvable." }, { status: 404 })
   }
-  const ext = book.format.toLowerCase()
-  const downloadName = safeFilename(`${book.title}.${ext}`)
-  const stream = readWebStream(book.filePath)
-  return new Response(stream, {
-    status: 200,
+
+  const book = await db.book.findUnique({
+    where: { id: bookId },
+    select: { title: true, author: true }
+  })
+  const ext = format.toLowerCase()
+  const safeTitle = (book?.title ?? "livre").replace(/[^a-zA-Z0-9._-]+/g, "_")
+  const filename = `${safeTitle}.${ext}`
+
+  return new NextResponse(readWebStream(copy.filePath), {
     headers: {
-      "content-type": MIME[book.format] ?? "application/octet-stream",
-      "content-length": String(stat.size),
-      "content-disposition": `attachment; filename="${downloadName}"`,
-      "cache-control": "private, no-store"
+      "content-type": format === "EPUB" ? "application/epub+zip" : "application/pdf",
+      "content-length": String(meta.size),
+      "content-disposition": `attachment; filename="${filename}"`
     }
   })
 }
