@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import {
   Library,
+  LibraryBig,
   HandHelping,
   BookMarked,
   BookOpen,
@@ -131,6 +132,13 @@ function SidebarBody({ user, onNavigate }: { user: SidebarUser; onNavigate?: () 
               <li>
                 <NavItem
                   link={{ href: "/admin/membres", label: "Membres", Icon: Settings }}
+                  pathname={pathname}
+                  onNavigate={onNavigate}
+                />
+              </li>
+              <li>
+                <NavItem
+                  link={{ href: "/admin/bibliotheques", label: "Bibliotheques", Icon: LibraryBig }}
                   pathname={pathname}
                   onNavigate={onNavigate}
                 />
