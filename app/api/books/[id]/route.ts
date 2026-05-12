@@ -4,7 +4,8 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { deleteByKey } from "@/lib/storage"
-import { PUBLIC_BOOK_SELECT } from "@/lib/books"
+import { PUBLIC_BOOK_SELECT, PUBLIC_COPY_SELECT } from "@/lib/books"
+import { getVisibleLibraryIds } from "@/lib/libraries"
 import { computeMatchKey, normalizeIsbn } from "@/lib/match"
 
 export const dynamic = "force-dynamic"
@@ -14,7 +15,37 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: "Non authentifie." }, { status: 401 })
   const { id } = await ctx.params
-  const book = await db.book.findUnique({ where: { id }, select: PUBLIC_BOOK_SELECT })
+
+  // V1.6 : on ne retourne le livre que s'il a au moins une copie visible
+  // pour l'user, et on filtre les copies retournees a celles visibles.
+  const visibleLibIds = await getVisibleLibraryIds(db, session.user.id)
+  if (visibleLibIds.length === 0) {
+    return NextResponse.json({ error: "Livre introuvable." }, { status: 404 })
+  }
+  const book = await db.book.findFirst({
+    where: {
+      id,
+      copies: { some: { libraryId: { in: visibleLibIds } } }
+    },
+    select: {
+      id: true,
+      title: true,
+      author: true,
+      isbn: true,
+      coverUrl: true,
+      description: true,
+      genre: true,
+      year: true,
+      publisher: true,
+      language: true,
+      addedAt: true,
+      copies: {
+        where: { libraryId: { in: visibleLibIds } },
+        select: PUBLIC_COPY_SELECT,
+        orderBy: { addedAt: "asc" }
+      }
+    }
+  })
   if (!book) return NextResponse.json({ error: "Livre introuvable." }, { status: 404 })
   return NextResponse.json({ book })
 }
@@ -48,13 +79,29 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (!session?.user) return NextResponse.json({ error: "Non authentifie." }, { status: 401 })
   const { id } = await ctx.params
 
-  const book = await db.book.findUnique({
-    where: { id },
-    select: { id: true, copies: { select: { addedById: true } } }
+  // V1.6 : le livre n'existe pour l'user que s'il a une copie visible.
+  const visibleLibIds = await getVisibleLibraryIds(db, session.user.id)
+  if (visibleLibIds.length === 0) {
+    return NextResponse.json({ error: "Livre introuvable." }, { status: 404 })
+  }
+
+  const book = await db.book.findFirst({
+    where: {
+      id,
+      copies: { some: { libraryId: { in: visibleLibIds } } }
+    },
+    select: {
+      id: true,
+      copies: {
+        where: { libraryId: { in: visibleLibIds } },
+        select: { addedById: true }
+      }
+    }
   })
   if (!book) return NextResponse.json({ error: "Livre introuvable." }, { status: 404 })
 
   const isAdmin = session.user.role === "ADMIN"
+  // Edition autorisee si l'user a ajoute au moins une copie VISIBLE du livre.
   const isCopyOwner = book.copies.some((c) => c.addedById === session.user.id)
   if (!isAdmin && !isCopyOwner) {
     return NextResponse.json({ error: "Acces refuse." }, { status: 403 })
