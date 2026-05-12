@@ -3,6 +3,7 @@ import { z } from "zod"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { isLibraryVisible } from "@/lib/libraries"
 import { signLoanToken, buildRespondUrl } from "@/lib/loans"
 import { sendLoanRequest } from "@/lib/email"
 import { logger } from "@/lib/logger"
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
       type: true,
       ownerId: true,
       bookId: true,
+      libraryId: true,
       book: { select: { title: true } },
       owner: { select: { id: true, name: true, email: true } }
     }
@@ -81,6 +83,14 @@ export async function POST(req: Request) {
       { error: "Vous etes deja proprietaire de cette copie." },
       { status: 400 }
     )
+  }
+
+  // V1.6 : on ne peut emprunter que dans une bib visible. Note : la liste
+  // GET ne filtre PAS par visibilite (spec §6 : les prets en cours restent
+  // visibles aux deux parties jusqu'a RETURNED).
+  const visible = await isLibraryVisible(db, session.user.id, copy.libraryId)
+  if (!visible) {
+    return NextResponse.json({ error: "Bibliotheque inaccessible." }, { status: 403 })
   }
 
   // Une seule demande active (PENDING ou ACCEPTED) par requester+copie.
