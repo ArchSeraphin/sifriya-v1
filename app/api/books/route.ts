@@ -10,6 +10,7 @@ import {
   PUBLIC_BOOK_SELECT
 } from "@/lib/books"
 import { createBookWithCopy } from "@/lib/books-mutations"
+import { getVisibleLibraryIds, isLibraryVisible } from "@/lib/libraries"
 import { normalizeIsbn } from "@/lib/match"
 import { logger } from "@/lib/logger"
 
@@ -30,18 +31,30 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Parametres invalides." }, { status: 400 })
   }
   const { q, type, format, sort, ownerId, addedById, page, limit } = parsed.data
+  const libraryIdParam = url.searchParams.get("libraryId") || undefined
 
-  const where: Prisma.BookWhereInput = {}
-  if (q) {
-    where.OR = [
-      { title: { contains: q, mode: "insensitive" } },
-      { author: { contains: q, mode: "insensitive" } },
-      { isbn: { contains: q, mode: "insensitive" } }
-    ]
+  // Scoping V1.6 : on filtre les Books a ceux qui ont au moins une copie
+  // dans une bib visible. Pour un ADMIN, getVisibleLibraryIds renvoie toutes
+  // les bibs ; pour un USER, uniquement ses memberships.
+  const visibleLibIds = await getVisibleLibraryIds(db, session.user.id)
+  if (visibleLibIds.length === 0) {
+    return NextResponse.json({ books: [], total: 0, page, totalPages: 1, limit })
+  }
+
+  // Si libraryId est passe en param, on verifie qu'il est visible
+  // (sinon 403). Le scoping se reduit alors a cette seule bib.
+  let scopedLibraryIds = visibleLibIds
+  if (libraryIdParam) {
+    if (!visibleLibIds.includes(libraryIdParam)) {
+      return NextResponse.json({ error: "Bibliotheque inaccessible." }, { status: 403 })
+    }
+    scopedLibraryIds = [libraryIdParam]
   }
 
   // Filtres copies — combines via copies.some({...})
-  const copyFilters: Prisma.BookCopyWhereInput = {}
+  const copyFilters: Prisma.BookCopyWhereInput = {
+    libraryId: { in: scopedLibraryIds }
+  }
   if (type) copyFilters.type = type
   if (format) {
     copyFilters.type = "DIGITAL"
@@ -52,8 +65,16 @@ export async function GET(req: Request) {
     copyFilters.ownerId = ownerId
   }
   if (addedById) copyFilters.addedById = addedById
-  if (Object.keys(copyFilters).length > 0) {
-    where.copies = { some: copyFilters }
+
+  const where: Prisma.BookWhereInput = {
+    copies: { some: copyFilters }
+  }
+  if (q) {
+    where.OR = [
+      { title: { contains: q, mode: "insensitive" } },
+      { author: { contains: q, mode: "insensitive" } },
+      { isbn: { contains: q, mode: "insensitive" } }
+    ]
   }
 
   const [total, books] = await Promise.all([
@@ -96,7 +117,9 @@ const Common = z.object({
   language: z.string().trim().max(10).optional().nullable(),
   coverUrl: CoverUrl.optional().nullable(),
   sourceApi: z.enum(["google_books", "open_library", "bnf", "manual"]).optional().nullable(),
-  externalId: z.string().trim().max(200).optional().nullable()
+  externalId: z.string().trim().max(200).optional().nullable(),
+  libraryId: z.string().min(1),
+  isPersonal: z.boolean().optional()
 })
 
 const DigitalCreate = Common.extend({
@@ -132,6 +155,12 @@ export async function POST(req: Request) {
   }
   const data = parsed.data
 
+  // V1.6 : la bib cible doit etre visible par l'user (ADMIN bypasse).
+  const allowed = await isLibraryVisible(db, session.user.id, data.libraryId)
+  if (!allowed) {
+    return NextResponse.json({ error: "Bibliotheque inaccessible." }, { status: 403 })
+  }
+
   try {
     const { bookId } = await createBookWithCopy(
       {
@@ -155,7 +184,8 @@ export async function POST(req: Request) {
             fileSize: data.fileSize
           }
         : { type: "PHYSICAL" },
-      session.user.id
+      session.user.id,
+      { libraryId: data.libraryId, isPersonal: data.isPersonal }
     )
     const book = await db.book.findUnique({
       where: { id: bookId },
