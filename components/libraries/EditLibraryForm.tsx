@@ -95,7 +95,10 @@ export function EditLibraryForm({ library, users }: Props) {
       <Field label="Nom *">
         <Input
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setSaved(false)
+            setName(e.target.value)
+          }}
           required
           maxLength={100}
           disabled={library.isDefault}
@@ -104,7 +107,10 @@ export function EditLibraryForm({ library, users }: Props) {
       <Field label="Description">
         <textarea
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => {
+            setSaved(false)
+            setDescription(e.target.value)
+          }}
           rows={3}
           maxLength={500}
           className="w-full rounded-md border border-[var(--rule)] bg-paper px-3 py-2 text-sm text-ink shadow-[var(--shadow-1)] focus:border-ink-3 focus:outline-none focus:ring-[3px] focus:ring-[rgba(31,27,19,0.05)]"
@@ -114,7 +120,10 @@ export function EditLibraryForm({ library, users }: Props) {
         <Field label="Gerant">
           <select
             value={managerId}
-            onChange={(e) => setManagerId(e.target.value)}
+            onChange={(e) => {
+              setSaved(false)
+              setManagerId(e.target.value)
+            }}
             className="h-9 w-full rounded-md border border-[var(--rule)] bg-paper px-3 text-sm text-ink shadow-[var(--shadow-1)] focus:border-ink-3 focus:outline-none"
           >
             <option value="">Aucun (admin seulement)</option>
