@@ -62,7 +62,7 @@ export function CreateLibraryForm({ users }: Props) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          maxLength={120}
+          maxLength={100}
           autoFocus
         />
       </Field>
@@ -71,7 +71,7 @@ export function CreateLibraryForm({ users }: Props) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          maxLength={2000}
+          maxLength={500}
           className="w-full rounded-md border border-[var(--rule)] bg-paper px-3 py-2 text-sm text-ink shadow-[var(--shadow-1)] focus:border-ink-3 focus:outline-none focus:ring-[3px] focus:ring-[rgba(31,27,19,0.05)]"
         />
       </Field>
