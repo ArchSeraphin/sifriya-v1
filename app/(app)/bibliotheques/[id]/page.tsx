@@ -52,19 +52,18 @@ export default async function BibliothequeScopedPage({ params, searchParams }: P
   const session = await getServerSession(authOptions)
   if (!session?.user) redirect("/login")
 
-  const visible = await isLibraryVisible(db, session.user.id, id)
-  if (!visible) notFound()
-
-  const library = await db.library.findUnique({
-    where: { id },
-    include: {
-      manager: { select: { id: true, name: true } },
-      _count: { select: { copies: true, memberships: true } }
-    }
-  })
-  if (!library) notFound()
-
-  const canManage = await canManageLibrary(db, session.user.id, id)
+  const [visible, library, canManage] = await Promise.all([
+    isLibraryVisible(db, session.user.id, id),
+    db.library.findUnique({
+      where: { id },
+      include: {
+        manager: { select: { id: true, name: true } },
+        _count: { select: { copies: true, memberships: true } }
+      }
+    }),
+    canManageLibrary(db, session.user.id, id)
+  ])
+  if (!visible || !library) notFound()
 
   const raw = flatten(await searchParams)
   const view = raw.view === "list" ? "list" : "grid"
