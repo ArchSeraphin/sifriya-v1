@@ -4,7 +4,7 @@ import { z } from "zod"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { PUBLIC_BOOK_SELECT } from "@/lib/books"
+import { selectVisibleBook } from "@/lib/books"
 import { addCopyToBook } from "@/lib/books-mutations"
 import { getVisibleLibraryIds, isLibraryVisible } from "@/lib/libraries"
 import { logger } from "@/lib/logger"
@@ -106,7 +106,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       )
       const full = await db.book.findUnique({
         where: { id: bookId },
-        select: PUBLIC_BOOK_SELECT
+        select: selectVisibleBook(visibleLibIds)
       })
       return NextResponse.json({ book: full }, { status: 201 })
     } catch (err) {
@@ -145,7 +145,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   )
   const full = await db.book.findUnique({
     where: { id: bookId },
-    select: PUBLIC_BOOK_SELECT
+    select: selectVisibleBook(visibleLibIds)
   })
   return NextResponse.json({ book: full }, { status: 201 })
 }

@@ -7,7 +7,7 @@ import { db } from "@/lib/db"
 import {
   ListQuery,
   orderByForSort,
-  PUBLIC_BOOK_SELECT
+  selectVisibleBook
 } from "@/lib/books"
 import { createBookWithCopy } from "@/lib/books-mutations"
 import { getVisibleLibraryIds, isLibraryVisible } from "@/lib/libraries"
@@ -84,7 +84,7 @@ export async function GET(req: Request) {
       orderBy: orderByForSort[sort],
       skip: (page - 1) * limit,
       take: limit,
-      select: PUBLIC_BOOK_SELECT
+      select: selectVisibleBook(scopedLibraryIds)
     })
   ])
 
@@ -187,9 +187,11 @@ export async function POST(req: Request) {
       session.user.id,
       { libraryId: data.libraryId, isPersonal: data.isPersonal }
     )
+    // La nouvelle copie est dans data.libraryId. On scope la reponse a cette
+    // seule bib (l'user vient d'y ajouter — pas de leak vers d'autres libs).
     const book = await db.book.findUnique({
       where: { id: bookId },
-      select: PUBLIC_BOOK_SELECT
+      select: selectVisibleBook([data.libraryId])
     })
     return NextResponse.json({ book }, { status: 201 })
   } catch (err) {
