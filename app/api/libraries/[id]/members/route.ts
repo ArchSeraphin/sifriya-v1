@@ -88,6 +88,14 @@ export async function PUT(
     )
   }
 
+  // Anti-orphan : un gérant nommé doit toujours rester membre de sa biblio,
+  // sinon il aurait le pouvoir de gérer mais ne verrait plus le catalogue
+  // (canManage=true mais isLibraryVisible=false). Si l'appelant (ADMIN ici)
+  // omet le manager du target set, on le réinjecte silencieusement.
+  if (lib.managerId && !targetIds.has(lib.managerId)) {
+    targetIds.add(lib.managerId)
+  }
+
   // Valider que tous les userIds existent en un seul roundtrip.
   if (targetIds.size > 0) {
     const idsArray = Array.from(targetIds)

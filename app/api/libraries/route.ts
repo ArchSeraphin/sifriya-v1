@@ -54,7 +54,7 @@ const PostBody = z
   .object({
     name: z.string().trim().min(1).max(100),
     description: z.string().trim().max(500).optional(),
-    managerId: z.string().nullable().optional()
+    managerId: z.string().min(1).nullable().optional()
   })
   .strict()
 
