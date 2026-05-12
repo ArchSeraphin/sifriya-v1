@@ -42,6 +42,16 @@ export function PlancheFlow({ onClose, initialLibraryId }: Props) {
   const [year, setYear] = React.useState("")
   const [libraryId, setLibraryId] = React.useState<string>(initialLibraryId ?? GENERALE_LIBRARY_ID)
 
+  // Track mount state so async callbacks don't setState after unmount
+  // (e.g. user closes the Modal mid-upload or mid-POST).
+  const mountedRef = React.useRef(true)
+  React.useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
   // Default the author to the session user's name on first render of the form step,
   // but only if the user hasn't typed anything. We use a ref so we only seed once.
   const seededAuthorRef = React.useRef(false)
@@ -70,6 +80,7 @@ export function PlancheFlow({ onClose, initialLibraryId }: Props) {
     data.append("file", file)
     try {
       const result = (await uploadWithProgress("/api/uploads", data, setProgress)) as UploadResult
+      if (!mountedRef.current) return
       if (result.format !== "PDF") {
         setError("Seul le format PDF est accepte pour une Planche.")
         setStep("select")
@@ -79,6 +90,7 @@ export function PlancheFlow({ onClose, initialLibraryId }: Props) {
       setTitle(result.suggestedQuery)
       setStep("form")
     } catch (err) {
+      if (!mountedRef.current) return
       setError(err instanceof Error ? err.message : "Echec de l'envoi.")
       setStep("select")
     }
@@ -86,6 +98,7 @@ export function PlancheFlow({ onClose, initialLibraryId }: Props) {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (pending) return
     if (!upload) return
     if (!title.trim()) {
       setError("Le titre est obligatoire.")
@@ -110,9 +123,11 @@ export function PlancheFlow({ onClose, initialLibraryId }: Props) {
         isPersonal: true
       })
     })
+    if (!mountedRef.current) return
     setPending(false)
     if (!res.ok) {
       const body = (await res.json().catch(() => null)) as { error?: string } | null
+      if (!mountedRef.current) return
       setError(body?.error ?? "Echec de l'enregistrement.")
       return
     }
