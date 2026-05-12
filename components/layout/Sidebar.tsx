@@ -18,6 +18,7 @@ import type { Role } from "@prisma/client"
 import { cn } from "@/lib/cn"
 import { Avatar } from "@/components/ui/Avatar"
 import { SearchBar } from "@/components/layout/SearchBar"
+import { useLibraries } from "@/lib/hooks/useLibraries"
 
 type NavLink = {
   href: string
@@ -83,6 +84,8 @@ export function Sidebar({ user }: SidebarProps) {
 
 function SidebarBody({ user, onNavigate }: { user: SidebarUser; onNavigate?: () => void }) {
   const pathname = usePathname()
+  const { libraries } = useLibraries()
+  const restrictedLibraries = libraries.filter((lib) => !lib.isDefault)
   return (
     <>
       <nav className="flex-1 overflow-y-auto px-2 py-4">
@@ -93,6 +96,26 @@ function SidebarBody({ user, onNavigate }: { user: SidebarUser; onNavigate?: () 
             </li>
           ))}
         </ul>
+        {restrictedLibraries.length > 0 ? (
+          <>
+            <SectionDivider label="Mes bibliotheques" />
+            <ul className="space-y-0.5">
+              {restrictedLibraries.map((lib) => (
+                <li key={lib.id}>
+                  <NavItem
+                    link={{
+                      href: `/bibliotheques/${lib.id}`,
+                      label: lib.name,
+                      Icon: BookOpen
+                    }}
+                    pathname={pathname}
+                    onNavigate={onNavigate}
+                  />
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
         <SectionDivider label="Ma bibliotheque" />
         <ul className="space-y-0.5">
           {PERSONAL_LINKS.map((link) => (

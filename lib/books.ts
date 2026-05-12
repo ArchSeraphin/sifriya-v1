@@ -37,11 +37,12 @@ export type CopyDTO = Pick<
 > & {
   owner: PersonLite | null
   addedBy: PersonLite
+  library: { id: string; name: string; isDefault: boolean }
 }
 
 export type BookListed = Pick<
   Book,
-  "id" | "title" | "author" | "isbn" | "coverUrl" | "genre" | "year" | "publisher" | "language" | "addedAt"
+  "id" | "title" | "author" | "isbn" | "coverUrl" | "genre" | "year" | "publisher" | "language" | "addedAt" | "isPersonal"
 > & {
   copies: CopyDTO[]
 }
@@ -55,7 +56,8 @@ export const PUBLIC_COPY_SELECT = {
   fileSize: true,
   addedAt: true,
   owner: { select: { id: true, name: true, email: true, avatarColor: true } },
-  addedBy: { select: { id: true, name: true, email: true, avatarColor: true } }
+  addedBy: { select: { id: true, name: true, email: true, avatarColor: true } },
+  library: { select: { id: true, name: true, isDefault: true } }
 } as const
 
 export const PUBLIC_BOOK_SELECT = {
@@ -70,11 +72,40 @@ export const PUBLIC_BOOK_SELECT = {
   publisher: true,
   language: true,
   addedAt: true,
+  isPersonal: true,
   copies: {
     select: PUBLIC_COPY_SELECT,
     orderBy: { addedAt: "asc" }
   }
 } as const
+
+// =====================================================================
+// V1.6 — select scope par visibilite (filtre les copies aux libs visibles)
+// A utiliser dans toutes les routes qui renvoient un Book au client.
+// `PUBLIC_BOOK_SELECT` lui-meme renvoie TOUTES les copies (incluant celles
+// dans des libs invisibles) : a reserver aux contextes admin/internes.
+// =====================================================================
+export function selectVisibleBook(visibleLibIds: string[]) {
+  return {
+    id: true,
+    title: true,
+    author: true,
+    isbn: true,
+    coverUrl: true,
+    description: true,
+    genre: true,
+    year: true,
+    publisher: true,
+    language: true,
+    addedAt: true,
+    isPersonal: true,
+    copies: {
+      where: { libraryId: { in: visibleLibIds } },
+      select: PUBLIC_COPY_SELECT,
+      orderBy: { addedAt: "asc" }
+    }
+  } as const
+}
 
 // =====================================================================
 // Helpers d'affichage (purs — utilisables cote client)

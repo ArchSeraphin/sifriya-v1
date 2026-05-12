@@ -43,8 +43,12 @@ export async function findMatchingBook(
     title: string
     author?: string | null
     isbn?: string | null
+    isPersonal?: boolean
   }
 ): Promise<BookMatch | null> {
+  // Pas de dedup pour les Planches : chaque livre personnel est unique par construction.
+  if (input.isPersonal) return null
+
   const isbn = normalizeIsbn(input.isbn)
   if (isbn) {
     const byIsbn = await db.book.findFirst({

@@ -3,6 +3,7 @@ import { z } from "zod"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { getVisibleLibraryIds } from "@/lib/libraries"
 import { readWebStream, statByKey } from "@/lib/storage"
 
 export const dynamic = "force-dynamic"
@@ -26,8 +27,19 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   }
   const { format } = parsed.data
 
+  // V1.6 : on cherche directement une copie VISIBLE. Sans ce filtre,
+  // findFirst pourrait tomber sur une copie d'une bib invisible alors qu'une
+  // copie visible existe ailleurs (false 403 intermittent). On collapse
+  // "introuvable" et "invisible" en 404 — l'user ne doit pas pouvoir
+  // distinguer les deux cas (don't-leak-existence, spec §6).
+  const visibleLibIds = await getVisibleLibraryIds(db, session.user.id)
   const copy = await db.bookCopy.findFirst({
-    where: { bookId, type: "DIGITAL", format },
+    where: {
+      bookId,
+      type: "DIGITAL",
+      format,
+      libraryId: { in: visibleLibIds }
+    },
     select: { id: true, filePath: true, format: true }
   })
   if (!copy?.filePath) {

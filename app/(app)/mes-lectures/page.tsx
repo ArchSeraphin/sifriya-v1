@@ -132,7 +132,7 @@ export default async function MesLecturesPage(props: {
           {empty}
         </div>
       ) : (
-        <BookGrid books={books} readingByBookId={readingByBookId} />
+        <BookGrid books={books} readingByBookId={readingByBookId} showLibraryBadge />
       )}
     </section>
   )

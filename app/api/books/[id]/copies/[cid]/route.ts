@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { canManageLibrary } from "@/lib/libraries"
 import { deleteByKey } from "@/lib/storage"
 
 export const dynamic = "force-dynamic"
@@ -25,6 +26,7 @@ export async function DELETE(
       type: true,
       filePath: true,
       addedById: true,
+      libraryId: true,
       loans: {
         where: { status: { in: ["PENDING", "ACCEPTED"] } },
         select: { id: true }
@@ -37,7 +39,9 @@ export async function DELETE(
 
   const isAdmin = session.user.role === "ADMIN"
   const isAdder = copy.addedById === session.user.id
-  if (!isAdmin && !isAdder) {
+  // V1.6 : le gerant de la bib peut supprimer toute copie de sa bib.
+  const isManager = await canManageLibrary(db, session.user.id, copy.libraryId)
+  if (!isAdmin && !isAdder && !isManager) {
     return NextResponse.json({ error: "Acces refuse." }, { status: 403 })
   }
 

@@ -41,6 +41,27 @@ async function main() {
   })
 
   console.log(`Admin pret : ${admin.email} (${admin.id})`)
+
+  // V1.6 — Bibliothèque générale + membership de l'admin.
+  // Idempotent : safe à exécuter sur une DB déjà migrée (le backfill a créé
+  // la Library mais le seed peut tourner sur une DB fresh sans migration data).
+  const generale = await prisma.library.upsert({
+    where: { id: "lib_generale" },
+    update: {},
+    create: {
+      id: "lib_generale",
+      name: "Bibliothèque générale",
+      isDefault: true
+    }
+  })
+
+  await prisma.libraryMembership.upsert({
+    where: { libraryId_userId: { libraryId: generale.id, userId: admin.id } },
+    update: {},
+    create: { libraryId: generale.id, userId: admin.id }
+  })
+
+  console.log(`Seeded Library Générale (${generale.id}) + admin membership`)
 }
 
 main()

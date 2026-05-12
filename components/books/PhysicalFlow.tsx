@@ -16,6 +16,8 @@ import { Input } from "@/components/ui/Input"
 import { useMetadataSearch } from "@/lib/use-metadata-search"
 import { MetadataResultsList } from "@/components/books/MetadataResultsList"
 import { DuplicateConfirmModal } from "@/components/books/DuplicateConfirmModal"
+import { LibrarySelector } from "@/components/libraries/LibrarySelector"
+import { GENERALE_LIBRARY_ID } from "@/lib/libraries"
 
 type Step = "mode" | "isbn" | "search" | "form" | "duplicate"
 type Mode = "isbn" | "search" | "manual"
@@ -51,13 +53,15 @@ const EMPTY_FORM: FormState = {
 type Props = {
   onClose: () => void
   onCancel: () => void
+  initialLibraryId?: string
 }
 
-export function PhysicalFlow({ onClose, onCancel }: Props) {
+export function PhysicalFlow({ onClose, onCancel, initialLibraryId }: Props) {
   const router = useRouter()
   const [step, setStep] = React.useState<Step>("mode")
   const [mode, setMode] = React.useState<Mode>("manual")
   const [form, setForm] = React.useState<FormState>(EMPTY_FORM)
+  const [libraryId, setLibraryId] = React.useState<string>(initialLibraryId ?? GENERALE_LIBRARY_ID)
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [matchedBook, setMatchedBook] = React.useState<import("@/lib/books").BookListed | null>(null)
@@ -156,7 +160,8 @@ export function PhysicalFlow({ onClose, onCancel }: Props) {
         language: form.language.trim() || null,
         coverUrl: form.coverUrl.trim() || null,
         sourceApi: form.sourceApi || "manual",
-        externalId: form.externalId.trim() || null
+        externalId: form.externalId.trim() || null,
+        libraryId
       })
     })
     setPending(false)
@@ -178,7 +183,7 @@ export function PhysicalFlow({ onClose, onCancel }: Props) {
     const res = await fetch(`/api/books/${bookId}/copies`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ type: "PHYSICAL" })
+      body: JSON.stringify({ type: "PHYSICAL", libraryId })
     })
     setPending(false)
     if (!res.ok) {
@@ -256,6 +261,8 @@ export function PhysicalFlow({ onClose, onCancel }: Props) {
             }
           : undefined
       }
+      libraryId={libraryId}
+      setLibraryId={setLibraryId}
     />
   )
 }
@@ -493,7 +500,9 @@ function PhysicalForm({
   pending,
   error,
   conflictBookId,
-  onConflictMerge
+  onConflictMerge,
+  libraryId,
+  setLibraryId
 }: {
   form: FormState
   setForm: React.Dispatch<React.SetStateAction<FormState>>
@@ -503,6 +512,8 @@ function PhysicalForm({
   error: string | null
   conflictBookId: string | null
   onConflictMerge?: () => void
+  libraryId: string
+  setLibraryId: (id: string) => void
 }) {
   const [uploadingCover, setUploadingCover] = React.useState(false)
   const [coverError, setCoverError] = React.useState<string | null>(null)
@@ -617,6 +628,8 @@ function PhysicalForm({
           </div>
         </div>
       </div>
+
+      <LibrarySelector value={libraryId} onChange={setLibraryId} label="Bibliotheque" />
 
       {error ? (
         <div className="rounded-md border border-[rgba(138,48,48,0.2)] bg-[rgba(138,48,48,0.06)] p-3">

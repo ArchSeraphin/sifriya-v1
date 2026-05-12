@@ -61,7 +61,7 @@ export default async function MesLivresPage() {
           </div>
         </div>
       ) : (
-        <BookGrid books={books} readingByBookId={readingByBookId} />
+        <BookGrid books={books} readingByBookId={readingByBookId} showLibraryBadge />
       )}
     </section>
   )

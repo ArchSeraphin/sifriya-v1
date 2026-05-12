@@ -13,7 +13,8 @@ export const runtime = "nodejs"
 const Body = z.object({
   title: z.string().trim().min(1).max(500),
   author: z.string().trim().max(300).optional().nullable(),
-  isbn: z.string().trim().max(20).optional().nullable()
+  isbn: z.string().trim().max(20).optional().nullable(),
+  isPersonal: z.boolean().optional()
 })
 
 export async function POST(req: Request) {
@@ -31,7 +32,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Donnees invalides." }, { status: 400 })
   }
 
-  const match = await findMatchingBook(db, parsed.data)
+  const match = await findMatchingBook(db, {
+    title: parsed.data.title,
+    author: parsed.data.author,
+    isbn: parsed.data.isbn,
+    isPersonal: parsed.data.isPersonal
+  })
   if (!match) return NextResponse.json({ match: null })
 
   const book = await db.book.findUnique({
