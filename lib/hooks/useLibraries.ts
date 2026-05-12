@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 export type LibraryListItem = {
   id: string
@@ -16,19 +16,29 @@ export function useLibraries() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const refresh = async () => {
+  const refresh = useCallback(async (signal?: AbortSignal) => {
     try {
-      const res = await fetch("/api/libraries")
+      const res = await fetch("/api/libraries", { signal })
+      if (!res.ok) {
+        throw new Error(`GET /api/libraries failed (${res.status})`)
+      }
       const json = await res.json()
+      if (signal?.aborted) return
       setLibraries(json.libraries ?? [])
+      setError(null)
     } catch (e) {
+      if ((e as Error).name === "AbortError") return
       setError(e as Error)
     } finally {
-      setIsLoading(false)
+      if (!signal?.aborted) setIsLoading(false)
     }
-  }
+  }, [])
 
-  useEffect(() => { refresh() }, [])
+  useEffect(() => {
+    const ctrl = new AbortController()
+    void refresh(ctrl.signal)
+    return () => ctrl.abort()
+  }, [refresh])
 
   return { libraries, error, isLoading, mutate: refresh }
 }

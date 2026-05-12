@@ -1,4 +1,5 @@
 "use client"
+import { useId } from "react"
 import { useLibraries } from "@/lib/hooks/useLibraries"
 
 type Props = {
@@ -10,6 +11,7 @@ type Props = {
 
 export function LibrarySelector({ value, onChange, disabled, label }: Props) {
   const { libraries, isLoading } = useLibraries()
+  const id = useId()
 
   // If only one library accessible: hide the select (value is fixed)
   if (!isLoading && libraries.length === 1) {
@@ -19,11 +21,15 @@ export function LibrarySelector({ value, onChange, disabled, label }: Props) {
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-[13px] text-[var(--ink-3)] font-medium">
+        <label
+          htmlFor={id}
+          className="text-[13px] text-[var(--ink-3)] font-medium"
+        >
           {label}
         </label>
       )}
       <select
+        id={id}
         value={value}
         onChange={e => onChange(e.target.value)}
         disabled={disabled || isLoading}
