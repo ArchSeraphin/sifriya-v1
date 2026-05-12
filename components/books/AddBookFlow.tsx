@@ -1,16 +1,17 @@
 "use client"
 
 import * as React from "react"
-import { Cloud, BookOpenText } from "lucide-react"
+import { Cloud, BookOpenText, FileText } from "lucide-react"
 import { Modal } from "@/components/ui/Modal"
 import { DigitalUploadFlow } from "@/components/books/DigitalUploadFlow"
 import { PhysicalFlow } from "@/components/books/PhysicalFlow"
+import { PlancheFlow } from "@/components/books/PlancheFlow"
 
-type Mode = "choose" | "digital" | "physical"
+type Mode = "choose" | "digital" | "physical" | "planche"
 
-type Props = { open: boolean; onClose: () => void }
+type Props = { open: boolean; onClose: () => void; initialLibraryId?: string }
 
-export function AddBookFlow({ open, onClose }: Props) {
+export function AddBookFlow({ open, onClose, initialLibraryId }: Props) {
   const [mode, setMode] = React.useState<Mode>("choose")
 
   React.useEffect(() => {
@@ -26,7 +27,9 @@ export function AddBookFlow({ open, onClose }: Props) {
       ? "Ajouter un livre"
       : mode === "digital"
         ? "Ajouter un livre numerique"
-        : "Ajouter un livre physique"
+        : mode === "physical"
+          ? "Ajouter un livre physique"
+          : "Ajouter une planche"
 
   return (
     <Modal open={open} onClose={close} title={title} size="lg">
@@ -34,6 +37,7 @@ export function AddBookFlow({ open, onClose }: Props) {
         <TypeChooser
           onDigital={() => setMode("digital")}
           onPhysical={() => setMode("physical")}
+          onPlanche={() => setMode("planche")}
         />
       ) : null}
       {mode === "digital" ? (
@@ -42,21 +46,26 @@ export function AddBookFlow({ open, onClose }: Props) {
       {mode === "physical" ? (
         <PhysicalFlow onClose={close} onCancel={() => setMode("choose")} />
       ) : null}
+      {mode === "planche" ? (
+        <PlancheFlow onClose={close} initialLibraryId={initialLibraryId} />
+      ) : null}
     </Modal>
   )
 }
 
 function TypeChooser({
   onDigital,
-  onPhysical
+  onPhysical,
+  onPlanche
 }: {
   onDigital: () => void
   onPhysical: () => void
+  onPlanche: () => void
 }) {
   return (
     <div className="space-y-3">
       <p className="text-[13px] text-ink-3">Quel type de livre souhaitez-vous ajouter ?</p>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         <Choice
           Icon={Cloud}
           label="Numerique"
@@ -68,6 +77,12 @@ function TypeChooser({
           label="Physique"
           hint="Un livre papier que vous mettez a disposition pour le pret."
           onClick={onPhysical}
+        />
+        <Choice
+          Icon={FileText}
+          label="Planche"
+          hint="Un PDF personnel dont vous etes l'auteur (ecrit, article, journal)."
+          onClick={onPlanche}
         />
       </div>
     </div>
