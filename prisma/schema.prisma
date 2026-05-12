@@ -58,8 +58,8 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
+  accounts Account[]
+  sessions Session[]
 
   ownedCopies   BookCopy[] @relation("CopyOwner")
   addedCopies   BookCopy[] @relation("CopyAdder")
@@ -71,6 +71,9 @@ model User {
   invitedUsers  User[]     @relation("UserInvites")
 
   bulkImportSessions BulkImportSession[]
+
+  managedLibraries Library[]           @relation("LibraryManager")
+  memberships      LibraryMembership[]
 }
 
 enum Role {
@@ -79,24 +82,25 @@ enum Role {
 }
 
 model Book {
-  id           String     @id @default(cuid())
-  title        String
-  author       String?
-  isbn         String?    @unique
-  description  String?    @db.Text
-  genre        String?
-  year         Int?
-  publisher    String?
-  language     String?    @default("fr")
-  coverUrl     String?
-  sourceApi    String?
-  externalId   String?
-  matchKey     String
-  addedAt      DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id          String   @id @default(cuid())
+  title       String
+  author      String?
+  isbn        String?  @unique
+  description String?  @db.Text
+  genre       String?
+  year        Int?
+  publisher   String?
+  language    String?  @default("fr")
+  coverUrl    String?
+  sourceApi   String?
+  externalId  String?
+  matchKey    String
+  isPersonal  Boolean  @default(false)
+  addedAt     DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  copies       BookCopy[]
-  readings     Reading[]
+  copies          BookCopy[]
+  readings        Reading[]
   bulkImportItems BulkImportItem[] @relation("BulkImportMergeTarget")
 
   @@index([matchKey])
@@ -106,29 +110,33 @@ model Book {
 }
 
 model BookCopy {
-  id          String      @id @default(cuid())
-  bookId      String
-  book        Book        @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
-  type        CopyType
+  type CopyType
 
-  format      FileFormat?
-  filePath    String?
-  fileSize    Int?
+  format   FileFormat?
+  filePath String?
+  fileSize Int?
 
-  ownerId     String?
-  owner       User?       @relation("CopyOwner", fields: [ownerId], references: [id])
+  libraryId String?
+  library   Library? @relation(fields: [libraryId], references: [id])
 
-  addedById   String
-  addedBy     User        @relation("CopyAdder", fields: [addedById], references: [id])
-  addedAt     DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  ownerId String?
+  owner   User?   @relation("CopyOwner", fields: [ownerId], references: [id])
 
-  loans       Loan[]
+  addedById String
+  addedBy   User     @relation("CopyAdder", fields: [addedById], references: [id])
+  addedAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  loans Loan[]
 
   @@index([bookId])
   @@index([ownerId])
   @@index([addedById])
+  @@index([libraryId])
 }
 
 enum CopyType {
@@ -189,14 +197,44 @@ enum ReadingStatus {
   READ
 }
 
-model BulkImportSession {
+model Library {
   id          String   @id @default(cuid())
-  ownerId     String
-  owner       User     @relation(fields: [ownerId], references: [id])
-  status      BulkImportSessionStatus @default(IN_PROGRESS)
-  totalFiles  Int      @default(0)
+  name        String
+  description String?
+  isDefault   Boolean  @default(false)
+  managerId   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  manager     User?               @relation("LibraryManager", fields: [managerId], references: [id])
+  memberships LibraryMembership[]
+  copies      BookCopy[]
+
+  @@index([isDefault])
+  @@index([managerId])
+}
+
+model LibraryMembership {
+  id        String   @id @default(cuid())
+  libraryId String
+  userId    String
+  addedAt   DateTime @default(now())
+
+  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([libraryId, userId])
+  @@index([userId])
+}
+
+model BulkImportSession {
+  id          String                  @id @default(cuid())
+  ownerId     String
+  owner       User                    @relation(fields: [ownerId], references: [id])
+  status      BulkImportSessionStatus @default(IN_PROGRESS)
+  totalFiles  Int                     @default(0)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
   committedAt DateTime?
   items       BulkImportItem[]
 
@@ -205,20 +243,20 @@ model BulkImportSession {
 
 enum BulkImportSessionStatus {
   IN_PROGRESS
-  COMMITTING    // transient state pendant le commit handler
+  COMMITTING // transient state pendant le commit handler
   COMMITTED
   ABANDONED
 }
 
 model BulkImportItem {
-  id              String   @id @default(cuid())
-  sessionId       String
-  session         BulkImportSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id        String            @id @default(cuid())
+  sessionId String
+  session   BulkImportSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  filename        String
-  format          FileFormat
-  fileSize        Int
-  uploadId        String?
+  filename String
+  format   FileFormat
+  fileSize Int
+  uploadId String?
 
   status          BulkImportItemStatus @default(PENDING)
   extractedTitle  String?
@@ -227,15 +265,15 @@ model BulkImportItem {
   candidatesJson  Json?
   chosenCandidate Json?
   mergeIntoBookId String?
-  mergeIntoBook   Book?    @relation("BulkImportMergeTarget", fields: [mergeIntoBookId], references: [id])
+  mergeIntoBook   Book?                @relation("BulkImportMergeTarget", fields: [mergeIntoBookId], references: [id])
 
   decision        BulkImportDecision @default(NONE)
   errorMessage    String?
   committedBookId String?
   committedCopyId String?
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([sessionId, status])
 }
