@@ -76,6 +76,14 @@ export async function isLibraryVisible(
   return Boolean(membership)
 }
 
-// Alias pour la semantique d'ajout — strictement identique a isLibraryVisible
-// (un membre peut ajouter, un non-membre ne peut pas).
-export const canAddBookToLibrary = isLibraryVisible
+// Permission d'ajouter un livre dans une biblio. Aujourd'hui identique a
+// isLibraryVisible (un membre peut ajouter, un non-membre ne peut pas), mais
+// fonction distincte pour permettre une divergence future (biblios en lecture
+// seule, periode de freeze, etc.) sans toucher aux call sites.
+export async function canAddBookToLibrary(
+  db: Pick<PrismaClient, "user" | "libraryMembership">,
+  userId: string,
+  libraryId: string
+): Promise<boolean> {
+  return isLibraryVisible(db, userId, libraryId)
+}

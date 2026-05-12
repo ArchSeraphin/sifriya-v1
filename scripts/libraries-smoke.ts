@@ -74,16 +74,22 @@ async function main() {
   console.log(`USER  voit testLib       : ${userSees}  (true attendu — membre)`)
   console.log(`Autre user voit testLib  : ${otherSees} (false attendu)`)
 
-  // Cleanup
-  await db.libraryMembership.deleteMany({ where: { libraryId: testLib.id } })
-  await db.library.delete({ where: { id: testLib.id } })
-
   console.log("\nSmoke test termine")
-  await db.$disconnect()
 }
 
-main().catch(async e => {
-  console.error(e)
-  await db.$disconnect()
-  process.exit(1)
-})
+async function cleanup() {
+  // Idempotent : deleteMany ne lance pas si rien a supprimer, delete avec
+  // catch ignore le P2025 (Library deja absent).
+  await db.libraryMembership.deleteMany({ where: { libraryId: "lib_smoke_test" } })
+  await db.library.delete({ where: { id: "lib_smoke_test" } }).catch(() => undefined)
+}
+
+main()
+  .catch(async e => {
+    console.error(e)
+    process.exitCode = 1
+  })
+  .finally(async () => {
+    await cleanup()
+    await db.$disconnect()
+  })
