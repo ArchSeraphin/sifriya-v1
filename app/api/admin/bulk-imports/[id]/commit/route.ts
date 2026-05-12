@@ -9,6 +9,7 @@ import {
   type BookMetadataInput
 } from "@/lib/books-mutations"
 import { groupBySignature, type CommitItemInput } from "@/lib/bulk-import-commit"
+import { GENERALE_LIBRARY_ID } from "@/lib/libraries"
 import { logger } from "@/lib/logger"
 import type { BulkImportItem, FileFormat } from "@prisma/client"
 
@@ -133,12 +134,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         continue
       }
 
-      // Verifier qu'aucune copy DIGITAL du meme format n'existe deja sur le Book cible.
-      // Reproduit le contrat de POST /api/books/[id]/copies (lignes 62-71) — sans
-      // ce check, le MERGE bypasse la garde d'unicite (bookId, format) cote DIGITAL.
+      // Verifier qu'aucune copy DIGITAL du meme format n'existe deja sur le Book cible
+      // DANS LA GENERALE (V1.6 : la dedup est scope par bibliotheque). Le bulk-import
+      // admin cible toujours la Generale en V1.6 (cf. CLAUDE.md hors scope V1.6).
       const existingDigital = await db.bookCopy.findFirst({
         where: {
           bookId: item.mergeIntoBookId,
+          libraryId: GENERALE_LIBRARY_ID,
           type: "DIGITAL",
           format: item.format
         },
@@ -158,7 +160,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
             format: item.format,
             fileSize: item.fileSize
           },
-          auth.userId
+          auth.userId,
+          { libraryId: GENERALE_LIBRARY_ID }
         )
         await db.bulkImportItem.update({
           where: { id: item.id },
@@ -194,7 +197,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
             format: head.format,
             fileSize: head.fileSize
           },
-          auth.userId
+          auth.userId,
+          { libraryId: GENERALE_LIBRARY_ID }
         )
         await db.bulkImportItem.update({
           where: { id: head.id },
@@ -227,7 +231,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
                 format: sibItem.format,
                 fileSize: sibItem.fileSize
               },
-              auth.userId
+              auth.userId,
+              { libraryId: GENERALE_LIBRARY_ID }
             )
             await db.bulkImportItem.update({
               where: { id: sibItem.id },
