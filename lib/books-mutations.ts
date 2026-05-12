@@ -42,15 +42,32 @@ export type PhysicalCopyInput = {
 
 export type CopyInput = DigitalCopyInput | PhysicalCopyInput
 
+// Options V1.6 — bibliotheque cible + flag Planches.
+// libraryId est REQUIS : toute copie doit appartenir a une bibliotheque.
+// isPersonal=true marque le Book comme une Planche (livre personnel non partage)
+// et force ownerId=addedById sur la copie sauf override explicite.
+export type BookCopyOptions = {
+  libraryId: string
+  isPersonal?: boolean
+  ownerId?: string // override explicite (sinon defaut: addedById si isPersonal)
+}
+
 // Cree un Book + sa premiere BookCopy. Pour DIGITAL, deplace le pending
 // file vers son emplacement final apres la creation du copy.id.
 export async function createBookWithCopy(
   metadata: BookMetadataInput,
   copy: CopyInput,
-  userId: string
+  userId: string,
+  options: BookCopyOptions
 ): Promise<{ bookId: string; copyId: string }> {
+  if (!options.libraryId) throw new Error("libraryId required")
+
   const isbn = normalizeIsbn(metadata.isbn)
   const matchKey = computeMatchKey(metadata.title, metadata.author)
+  const isPersonal = options.isPersonal ?? false
+  // Pour les Planches : si pas d'ownerId explicite, le uploader est proprietaire.
+  const resolvedOwnerId =
+    options.ownerId ?? (isPersonal ? userId : undefined)
 
   const created = await db.$transaction(async (tx) => {
     const book = await tx.book.create({
@@ -66,7 +83,8 @@ export async function createBookWithCopy(
         coverUrl: metadata.coverUrl,
         sourceApi: metadata.sourceApi,
         externalId: metadata.externalId,
-        matchKey
+        matchKey,
+        isPersonal
       },
       select: { id: true }
     })
@@ -75,16 +93,19 @@ export async function createBookWithCopy(
       copy.type === "DIGITAL"
         ? {
             bookId: book.id,
+            libraryId: options.libraryId,
             type: "DIGITAL",
             format: copy.format,
             fileSize: copy.fileSize,
             filePath: "pending",
-            addedById: userId
+            addedById: userId,
+            ...(resolvedOwnerId ? { ownerId: resolvedOwnerId } : {})
           }
         : {
             bookId: book.id,
+            libraryId: options.libraryId,
             type: "PHYSICAL",
-            ownerId: userId,
+            ownerId: resolvedOwnerId ?? userId,
             addedById: userId
           }
 
@@ -119,17 +140,26 @@ export async function createBookWithCopy(
   return created
 }
 
+// Options V1.6 pour addCopyToBook — libraryId requis (la copie doit appartenir a une bibliotheque).
+export type AddCopyOptions = {
+  libraryId: string
+}
+
 // Ajoute une BookCopy a un Book existant (pour merger un nouveau format).
 // Le Book n'est pas modifie.
 export async function addCopyToBook(
   bookId: string,
   copy: CopyInput,
-  userId: string
+  userId: string,
+  options: AddCopyOptions
 ): Promise<{ copyId: string }> {
+  if (!options.libraryId) throw new Error("libraryId required")
+
   const copyData: Prisma.BookCopyUncheckedCreateInput =
     copy.type === "DIGITAL"
       ? {
           bookId,
+          libraryId: options.libraryId,
           type: "DIGITAL",
           format: copy.format,
           fileSize: copy.fileSize,
@@ -138,6 +168,7 @@ export async function addCopyToBook(
         }
       : {
           bookId,
+          libraryId: options.libraryId,
           type: "PHYSICAL",
           ownerId: userId,
           addedById: userId
