@@ -112,3 +112,32 @@ export async function requireAdmin(): Promise<
   }
   return { ok: true, userId: session.user.id, email: session.user.email ?? "" }
 }
+
+// Guard pour les routes de gestion d'une biblio (ADMIN global ou gerant).
+// Retourne la session si OK, sinon NextResponse 401/403 sous la cle `error`.
+export async function requireLibraryManager(libraryId: string) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return { error: NextResponse.json({ error: "Non authentifié" }, { status: 401 }) }
+  }
+  const { canManageLibrary } = await import("@/lib/libraries")
+  const ok = await canManageLibrary(db, session.user.id, libraryId)
+  if (!ok) {
+    return { error: NextResponse.json({ error: "Accès refusé" }, { status: 403 }) }
+  }
+  return { session }
+}
+
+// Guard pour ajouter du contenu dans une biblio (ADMIN global ou membre).
+export async function requireLibraryMember(libraryId: string) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return { error: NextResponse.json({ error: "Non authentifié" }, { status: 401 }) }
+  }
+  const { isLibraryVisible } = await import("@/lib/libraries")
+  const ok = await isLibraryVisible(db, session.user.id, libraryId)
+  if (!ok) {
+    return { error: NextResponse.json({ error: "Accès refusé" }, { status: 403 }) }
+  }
+  return { session }
+}
