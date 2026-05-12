@@ -3,6 +3,7 @@ import { z } from "zod"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { isLibraryVisible } from "@/lib/libraries"
 import { readWebStream, statByKey } from "@/lib/storage"
 
 export const dynamic = "force-dynamic"
@@ -28,13 +29,19 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
 
   const copy = await db.bookCopy.findFirst({
     where: { bookId, type: "DIGITAL", format },
-    select: { id: true, filePath: true, format: true }
+    select: { id: true, filePath: true, format: true, libraryId: true }
   })
   if (!copy?.filePath) {
     return NextResponse.json(
       { error: `Aucune copie ${format} disponible pour ce livre.` },
       { status: 404 }
     )
+  }
+
+  // V1.6 : la copie doit appartenir a une bib visible par l'user.
+  const visible = await isLibraryVisible(db, session.user.id, copy.libraryId)
+  if (!visible) {
+    return NextResponse.json({ error: "Acces refuse." }, { status: 403 })
   }
 
   const meta = await statByKey(copy.filePath)
