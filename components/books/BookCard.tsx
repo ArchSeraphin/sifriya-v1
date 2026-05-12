@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Cover } from "@/components/ui/Cover"
-import { FormatBadge, TypeBadge } from "@/components/books/Badges"
+import { FormatBadge, LibraryBadge, TypeBadge } from "@/components/books/Badges"
 import { digitalFormats, physicalCount } from "@/lib/books"
 import type { BookListed } from "@/lib/books"
 import type { ReadingStatus } from "@prisma/client"
@@ -9,14 +9,18 @@ import { BookmarkButton } from "@/components/books/BookmarkButton"
 type BookCardProps = {
   book: BookListed
   readingStatus?: ReadingStatus | null
+  showLibraryBadge?: boolean
 }
 
 // Le BookmarkButton vit en sibling du Link (et non a l'interieur), pour eviter
 // l'imbrication HTML <button> dans <a> — violation interactive content + ennuis
 // d'a11y et d'hydration React.
-export function BookCard({ book, readingStatus }: BookCardProps) {
+export function BookCard({ book, readingStatus, showLibraryBadge }: BookCardProps) {
   const formats = digitalFormats(book)
   const physicals = physicalCount(book)
+  const primaryLibrary = showLibraryBadge
+    ? book.copies.find((c) => !c.library.isDefault)?.library
+    : undefined
 
   return (
     <div className="group relative rounded-lg transition hover:bg-paper-2/60">
@@ -43,6 +47,7 @@ export function BookCard({ book, readingStatus }: BookCardProps) {
             {physicals > 0 ? (
               <TypeBadge type="PHYSICAL" />
             ) : null}
+            {primaryLibrary ? <LibraryBadge name={primaryLibrary.name} /> : null}
           </div>
         </div>
       </Link>

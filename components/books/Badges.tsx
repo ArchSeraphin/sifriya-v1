@@ -35,3 +35,21 @@ const TYPE_LABEL: Record<CopyType, string> = {
 export function TypeBadge({ type, className }: { type: CopyType; className?: string }) {
   return <span className={cn(PILL_BASE, TYPE_CLASSES[type], className)}>{TYPE_LABEL[type]}</span>
 }
+
+const LIBRARY_PILL_CLASSES = "bg-paper-2 text-ink-2"
+
+export function LibraryBadge({ name, className }: { name: string; className?: string }) {
+  return (
+    <span
+      className={cn(
+        PILL_BASE,
+        LIBRARY_PILL_CLASSES,
+        "normal-case tracking-normal max-w-[120px] truncate",
+        className
+      )}
+      title={name}
+    >
+      {name}
+    </span>
+  )
+}

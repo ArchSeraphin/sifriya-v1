@@ -37,6 +37,7 @@ export type CopyDTO = Pick<
 > & {
   owner: PersonLite | null
   addedBy: PersonLite
+  library: { id: string; name: string; isDefault: boolean }
 }
 
 export type BookListed = Pick<
@@ -55,7 +56,8 @@ export const PUBLIC_COPY_SELECT = {
   fileSize: true,
   addedAt: true,
   owner: { select: { id: true, name: true, email: true, avatarColor: true } },
-  addedBy: { select: { id: true, name: true, email: true, avatarColor: true } }
+  addedBy: { select: { id: true, name: true, email: true, avatarColor: true } },
+  library: { select: { id: true, name: true, isDefault: true } }
 } as const
 
 export const PUBLIC_BOOK_SELECT = {
