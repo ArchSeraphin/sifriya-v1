@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { PUBLIC_BOOK_SELECT } from "@/lib/books"
 import { addCopyToBook } from "@/lib/books-mutations"
+import { getVisibleLibraryIds, isLibraryVisible } from "@/lib/libraries"
 import { logger } from "@/lib/logger"
 
 export const dynamic = "force-dynamic"
@@ -15,11 +16,13 @@ const DigitalCopy = z.object({
   type: z.literal("DIGITAL"),
   uploadId: z.string().min(8).max(64),
   format: z.enum(["EPUB", "PDF"]),
-  fileSize: z.number().int().min(1)
+  fileSize: z.number().int().min(1),
+  libraryId: z.string().min(1)
 })
 
 const PhysicalCopy = z.object({
-  type: z.literal("PHYSICAL")
+  type: z.literal("PHYSICAL"),
+  libraryId: z.string().min(1)
 })
 
 const CopyBody = z.discriminatedUnion("type", [DigitalCopy, PhysicalCopy])
@@ -30,9 +33,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
   const { id: bookId } = await ctx.params
 
-  const book = await db.book.findUnique({
-    where: { id: bookId },
-    select: { id: true }
+  // V1.6 : on ne retrouve le Book que s'il a au moins une copie visible
+  // pour l'user (sinon il "n'existe pas" du point de vue de l'user).
+  const visibleLibIds = await getVisibleLibraryIds(db, session.user.id)
+  if (visibleLibIds.length === 0) {
+    return NextResponse.json({ error: "Livre introuvable." }, { status: 404 })
+  }
+  const book = await db.book.findFirst({
+    where: {
+      id: bookId,
+      copies: { some: { libraryId: { in: visibleLibIds } } }
+    },
+    select: { id: true, isPersonal: true }
   })
   if (!book) return NextResponse.json({ error: "Livre introuvable." }, { status: 404 })
 
@@ -52,15 +64,25 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   }
   const data = parsed.data
 
+  // V1.6 : la bib cible de la nouvelle copie doit etre visible par l'user.
+  const targetVisible = await isLibraryVisible(db, session.user.id, data.libraryId)
+  if (!targetVisible) {
+    return NextResponse.json({ error: "Bibliotheque inaccessible." }, { status: 403 })
+  }
+
   if (data.type === "DIGITAL") {
-    // Check applicatif d'unicite (bookId, format) — pas d'index unique partiel
-    // en DB. Race condition theorique : 2 uploads simultanes du meme format
-    // peuvent passer le findFirst en parallele. Risque accepte pour V1 (50-100
-    // users) — au pire, 2 BookCopy DIGITAL identiques, l'admin peut nettoyer.
-    // Si volume augmente, ajouter une migration SQL : CREATE UNIQUE INDEX ...
-    // ON "BookCopy" ("bookId", format) WHERE type = 'DIGITAL'.
+    // Check applicatif d'unicite (bookId, format) SCOPE par bibliotheque (V1.6).
+    // Le meme livre peut exister en EPUB dans deux bibs differentes — c'est OK,
+    // c'est une copie distincte. La dedup ne joue qu'au sein d'une meme bib.
+    // Race condition theorique : 2 uploads simultanes du meme format dans la
+    // meme bib peuvent passer le findFirst en parallele. Risque accepte pour V1.
     const existing = await db.bookCopy.findFirst({
-      where: { bookId, type: "DIGITAL", format: data.format },
+      where: {
+        bookId,
+        libraryId: data.libraryId,
+        type: "DIGITAL",
+        format: data.format
+      },
       select: { id: true }
     })
     if (existing) {
@@ -79,7 +101,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
           format: data.format,
           fileSize: data.fileSize
         },
-        session.user.id
+        session.user.id,
+        { libraryId: data.libraryId, isPersonal: book.isPersonal }
       )
       const full = await db.book.findUnique({
         where: { id: bookId },
@@ -95,11 +118,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     }
   }
 
-  // PHYSICAL — conflit : meme (bookId, ownerId, type=PHYSICAL) deja present ?
-  // Meme race condition acceptee que pour DIGITAL. Si volume augmente, ajouter :
-  // CREATE UNIQUE INDEX ... ON "BookCopy" ("bookId", "ownerId") WHERE type = 'PHYSICAL'.
+  // PHYSICAL — conflit scope par bibliotheque (V1.6) : le meme proprietaire
+  // ne peut pas declarer deux exemplaires physiques du meme livre dans une
+  // meme bib. Race condition acceptee pour V1 (cf. DIGITAL).
   const existingPhysical = await db.bookCopy.findFirst({
-    where: { bookId, type: "PHYSICAL", ownerId: session.user.id },
+    where: {
+      bookId,
+      libraryId: data.libraryId,
+      type: "PHYSICAL",
+      ownerId: session.user.id
+    },
     select: { id: true }
   })
   if (existingPhysical) {
@@ -109,7 +137,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     )
   }
 
-  await addCopyToBook(bookId, { type: "PHYSICAL" }, session.user.id)
+  await addCopyToBook(
+    bookId,
+    { type: "PHYSICAL" },
+    session.user.id,
+    { libraryId: data.libraryId, isPersonal: book.isPersonal }
+  )
   const full = await db.book.findUnique({
     where: { id: bookId },
     select: PUBLIC_BOOK_SELECT
