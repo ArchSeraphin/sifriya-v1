@@ -42,7 +42,7 @@ export type CopyDTO = Pick<
 
 export type BookListed = Pick<
   Book,
-  "id" | "title" | "author" | "isbn" | "coverUrl" | "genre" | "year" | "publisher" | "language" | "addedAt"
+  "id" | "title" | "author" | "isbn" | "coverUrl" | "genre" | "year" | "publisher" | "language" | "addedAt" | "isPersonal"
 > & {
   copies: CopyDTO[]
 }

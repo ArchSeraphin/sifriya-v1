@@ -59,6 +59,9 @@ export function BookDetail({
 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
+            {book.isPersonal ? (
+              <Badge tone="accent">Planche</Badge>
+            ) : null}
             {formats.map((f) => (
               <Badge key={f} tone="accent">
                 {f}
@@ -134,7 +137,7 @@ export function BookDetail({
             <Item label="Ajoute le" value={dateFmt.format(book.addedAt)} />
           </dl>
 
-          <CopyList bookId={book.id} copies={book.copies} currentUser={currentUser} />
+          <CopyList bookId={book.id} copies={book.copies} currentUser={currentUser} isPersonal={book.isPersonal} />
         </div>
       </div>
     </article>

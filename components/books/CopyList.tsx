@@ -12,9 +12,10 @@ type Props = {
   bookId: string
   copies: CopyDTO[]
   currentUser: { id: string; role: "ADMIN" | "USER" }
+  isPersonal?: boolean
 }
 
-export function CopyList({ bookId, copies, currentUser }: Props) {
+export function CopyList({ bookId, copies, currentUser, isPersonal }: Props) {
   const router = useRouter()
   const [deletingId, setDeletingId] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
@@ -55,8 +56,11 @@ export function CopyList({ bookId, copies, currentUser }: Props) {
                 {c.type === "DIGITAL" ? (
                   <span className="text-ink-2">
                     <span className="font-mono uppercase tracking-widest">{c.format}</span>
-                    {c.fileSize ? ` · ${formatBytes(c.fileSize)}` : ""} · ajoute par{" "}
-                    <PersonInline person={c.addedBy} />
+                    {c.fileSize ? ` · ${formatBytes(c.fileSize)}` : ""} · {isPersonal && c.owner ? (
+                      <>Auteur : <PersonInline person={c.owner} /></>
+                    ) : (
+                      <>ajoute par <PersonInline person={c.addedBy} /></>
+                    )}
                   </span>
                 ) : c.owner ? (
                   <span className="text-ink-2">
