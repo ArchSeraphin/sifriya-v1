@@ -10,6 +10,8 @@ import { formatBytes } from "@/lib/books"
 import { useMetadataSearch } from "@/lib/use-metadata-search"
 import { MetadataResultsList } from "@/components/books/MetadataResultsList"
 import { DuplicateConfirmModal } from "@/components/books/DuplicateConfirmModal"
+import { LibrarySelector } from "@/components/libraries/LibrarySelector"
+import { GENERALE_LIBRARY_ID } from "@/lib/libraries"
 
 type Step = "select" | "uploading" | "match" | "form" | "duplicate"
 
@@ -54,14 +56,16 @@ const MAX_BYTES = 50 * 1024 * 1024
 type Props = {
   onClose: () => void
   onCancel: () => void
+  initialLibraryId?: string
 }
 
-export function DigitalUploadFlow({ onClose, onCancel }: Props) {
+export function DigitalUploadFlow({ onClose, onCancel, initialLibraryId }: Props) {
   const router = useRouter()
   const [step, setStep] = React.useState<Step>("select")
   const [upload, setUpload] = React.useState<UploadResult | null>(null)
   const [progress, setProgress] = React.useState(0)
   const [form, setForm] = React.useState<FormState>(EMPTY_FORM)
+  const [libraryId, setLibraryId] = React.useState<string>(initialLibraryId ?? GENERALE_LIBRARY_ID)
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [matchedBook, setMatchedBook] = React.useState<import("@/lib/books").BookListed | null>(null)
@@ -177,7 +181,8 @@ export function DigitalUploadFlow({ onClose, onCancel }: Props) {
         language: form.language.trim() || null,
         coverUrl: form.coverUrl.trim() || null,
         sourceApi: form.sourceApi || "manual",
-        externalId: form.externalId.trim() || null
+        externalId: form.externalId.trim() || null,
+        libraryId
       })
     })
     setPending(false)
@@ -204,7 +209,8 @@ export function DigitalUploadFlow({ onClose, onCancel }: Props) {
         type: "DIGITAL",
         uploadId: upload.uploadId,
         format: upload.format,
-        fileSize: upload.size
+        fileSize: upload.size,
+        libraryId
       })
     })
     setPending(false)
@@ -251,6 +257,8 @@ export function DigitalUploadFlow({ onClose, onCancel }: Props) {
         }
         onBack={() => setStep("match")}
         onSubmit={onSubmit}
+        libraryId={libraryId}
+        setLibraryId={setLibraryId}
       />
     )
   }
@@ -421,7 +429,9 @@ function FormStep({
   conflictBookId,
   onConflictMerge,
   onBack,
-  onSubmit
+  onSubmit,
+  libraryId,
+  setLibraryId
 }: {
   form: FormState
   setForm: React.Dispatch<React.SetStateAction<FormState>>
@@ -432,6 +442,8 @@ function FormStep({
   onConflictMerge?: () => void
   onBack: () => void
   onSubmit: (e: React.FormEvent) => void
+  libraryId: string
+  setLibraryId: (id: string) => void
 }) {
   const set = (k: keyof FormState) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -488,6 +500,7 @@ function FormStep({
           </p>
         </div>
       ) : null}
+      <LibrarySelector value={libraryId} onChange={setLibraryId} label="Bibliotheque" />
       {error ? (
         <div className="rounded-md border border-[rgba(138,48,48,0.2)] bg-[rgba(138,48,48,0.06)] p-3">
           <p className="text-[13px] text-[color:var(--err)]">{error}</p>

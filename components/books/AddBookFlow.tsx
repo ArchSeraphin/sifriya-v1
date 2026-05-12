@@ -41,10 +41,18 @@ export function AddBookFlow({ open, onClose, initialLibraryId }: Props) {
         />
       ) : null}
       {mode === "digital" ? (
-        <DigitalUploadFlow onClose={close} onCancel={() => setMode("choose")} />
+        <DigitalUploadFlow
+          onClose={close}
+          onCancel={() => setMode("choose")}
+          initialLibraryId={initialLibraryId}
+        />
       ) : null}
       {mode === "physical" ? (
-        <PhysicalFlow onClose={close} onCancel={() => setMode("choose")} />
+        <PhysicalFlow
+          onClose={close}
+          onCancel={() => setMode("choose")}
+          initialLibraryId={initialLibraryId}
+        />
       ) : null}
       {mode === "planche" ? (
         <PlancheFlow onClose={close} initialLibraryId={initialLibraryId} />
