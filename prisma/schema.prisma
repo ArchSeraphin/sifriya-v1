@@ -120,8 +120,8 @@ model BookCopy {
   filePath String?
   fileSize Int?
 
-  libraryId String?
-  library   Library? @relation(fields: [libraryId], references: [id])
+  libraryId String
+  library   Library @relation(fields: [libraryId], references: [id])
 
   ownerId String?
   owner   User?   @relation("CopyOwner", fields: [ownerId], references: [id])
