@@ -19,6 +19,7 @@
 | **V1.3** | branche `feat/v1-3-book-copies` | **Refactor `Book` → `Book` (œuvre) + `BookCopy` (exemplaire)**. Multi-formats par fiche, dédup à l'ajout (ISBN strict puis slug titre+auteur), modale de fusion vs fiche distincte, blocage 409 sur conflit format/owner. DB resetée. Plan : `docs/superpowers/plans/2026-05-06-doublons-multiformats.md`. Spec : `docs/superpowers/specs/2026-05-06-doublons-multiformats-design.md`. |
 | Fix | `35181c9` | Couvertures haute résolution (Google Books `zoom=0`, retire `edge=curl`, helper `lib/cover-url.ts` utilisé en API et au rendu). |
 | **V1.4** | branche `feat/v1-4-mes-lectures` | **Mes Lectures** : sélecteur 4 chips sur la fiche (`Aucun · À lire · En cours · Lu`), bookmark rapide sur les BookCard pour la wishlist, page `/mes-lectures` avec 3 onglets et compteurs. Privé strict. Plan : `docs/superpowers/plans/2026-05-06-mes-lectures.md`. Spec : `docs/superpowers/specs/2026-05-06-mes-lectures-design.md`. |
+| **V1.6** | branche `feat/v1-6-bibliotheques` | **Bibliothèques restreintes + Planches**. Schéma : `Library` + `LibraryMembership`, chaque `BookCopy` scopée à une `libraryId` (cascade-protect). Bibliothèque par défaut `lib_generale` créée au seed, tous les users en sont membres. ADMIN crée des bibliothèques restreintes (visibles uniquement par leurs membres) avec un gérant (USER ou ADMIN) qui peut éditer la liste des membres. Helper central `lib/libraries.ts` (`getVisibleLibraryIds`, `canManageLibrary`, `isLibraryVisible`) utilisé par toutes les routes Book/BookCopy/Loan. Nouveau type **Planche** : PDF personnel dont l'uploader est l'auteur (`isPersonal: true`, `ownerId = uploader`, pas de dédup ISBN). UI : sélecteur de bib dans tous les flows d'ajout, sidebar `Mes Bibliothèques`, badge `Planche` + auteur sur la fiche, badge bib sur les vues transverses (`/mes-livres`, `/mes-lectures`). Plan : `docs/superpowers/plans/2026-05-12-bibliotheques-et-planches.md`. Spec : `docs/superpowers/specs/2026-05-12-bibliotheques-et-planches-design.md`. |
 
 ## Surface fonctionnelle
 
@@ -29,11 +30,15 @@
 /bibliotheque                   catalogue paginé, filtres, vues grille/liste
 /bibliotheque/[id]              fiche livre
 /bibliotheque/[id]/modifier     édition fiche (auteur ou admin)
+/bibliotheques/[id]             catalogue scopé à une bibliothèque restreinte (V1.6)
 /mes-livres                     livres ajoutés par l'utilisateur
 /mes-lectures                   3 onglets À lire / En cours / Lu (?tab=...) avec compteurs
 /pret                           demandes envoyées + reçues
 /profil                         nom éditable + email + rôle + déconnexion
 /admin/membres                  liste users + invitation + toggle rôle
+/admin/bibliotheques            liste bib + création (V1.6)
+/admin/bibliotheques/nouveau    création bib (V1.6)
+/admin/bibliotheques/[id]       gestion : nom/description/gérant + membres + suppression (V1.6)
 ```
 
 ### API (toutes les routes sont dynamiques, sous `/api/...`)
@@ -61,12 +66,21 @@ POST   /api/loans                             demande prêt sur copie physique (
 GET    /api/loans                             sent + received (traverse copy.book)
 GET    /api/loans/[id]/respond                atterrissage email (HTML public)
 PATCH  /api/loans/[id]/return                 owner marque comme rendu
-POST   /api/admin/invites                     crée user + magic link (admin only)
+POST   /api/admin/invites                     crée user + magic link (admin only) — accepte libraryIds[] (V1.6)
 PATCH  /api/admin/users/[id]                  toggle rôle (admin only)
+GET    /api/libraries                         liste bib visibles (avec _count copies + memberships) (V1.6)
+POST   /api/libraries                         crée bib (admin) + membership auto pour le gérant (V1.6)
+GET    /api/libraries/[id]                    détail bib + members si canManage (V1.6)
+PATCH  /api/libraries/[id]                    nom/description/managerId (admin only, upsert membership si new manager) (V1.6)
+DELETE /api/libraries/[id]                    supprime bib (403 si isDefault, 409 si copies > 0) (V1.6)
+PUT    /api/libraries/[id]/members            batch atomique add/remove (anti-orphan : manager auto-injecté) (V1.6)
+DELETE /api/libraries/[id]/members/[userId]   retire membre (bloque si target = gérant) (V1.6)
 ```
 
 ### Modèle de données
 V1.3 : `Book` (œuvre) ↔ `0..N BookCopy` (exemplaire numérique ou physique). `Loan.copyId`, `Reading.bookId` (avec cascade). Migration : `prisma/migrations/20260506094857_v1_3_book_copies_init/`. Détail : `docs/superpowers/specs/2026-05-06-doublons-multiformats-design.md`.
+
+V1.6 : `Library` (id, name, isDefault, managerId?, description?) + `LibraryMembership` (compositeKey userId+libraryId). `BookCopy.libraryId` NOT NULL (cascade-protect : DELETE library bloqué si copies > 0). `Book.isPersonal` (Planche). Lib par défaut `lib_generale` (constante exportée). Helper central `lib/libraries.ts` source unique de vérité pour le scoping de visibilité. ADMIN bénéficie d'une super-visibilité (toutes les bib). Détail : `docs/superpowers/specs/2026-05-12-bibliotheques-et-planches-design.md`.
 
 ## Écarts vs `CLAUDE.md` (tous documentés en commit)
 
